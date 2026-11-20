@@ -858,12 +858,12 @@ later decision of RULES.md.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| S-API-1 | `Turborel\Pdo\Connection`, made from a `turborel://` URI or the driver's settings, as `\PDO` is from a DSN | `[DESIGN] D2` | not yet |
-| S-API-2 | The connection's attributes: errors always raised as exceptions, autocommit, the default fetch mode, the server's version | `[DESIGN] D2` | not yet |
-| S-API-3 | `prepare` and `query`, with `?` parameters, and `exec` giving the rows a statement changed | `[DESIGN] D2` | not yet |
-| S-API-4 | `Turborel\Pdo\Statement`: `execute`, `bindValue`, `bindParam`, `rowCount`, `columnCount`, `getColumnMeta` and `closeCursor` | `[DESIGN] D2` | not yet |
-| S-API-5 | Fetch modes: `FETCH_ASSOC`, `FETCH_NUM`, `FETCH_BOTH`, `FETCH_OBJ`, `FETCH_COLUMN` and `FETCH_CLASS`, by `fetch`, `fetchAll`, `fetchColumn` and iteration | `[DESIGN] D2` | not yet |
-| S-API-6 | Transactions: `beginTransaction`, `commit`, `rollBack` and `inTransaction` | `[DESIGN] D2` | not yet |
-| S-API-7 | `lastInsertId`, from the identity values an INSERT generated | `[DESIGN] D2` | not yet |
-| S-API-8 | Values as PHP types, each SQL type as Appendix A maps it, exact numbers without loss | `[DESIGN] D2` | not yet |
-| S-API-9 | `TurborelException` from every method, with its SQLSTATE, SQLCODE and `errorInfo` as PDO gives it | `[DESIGN] D2` | not yet |
+| S-API-1 | `Turborel\Pdo\Connection`, made from a `turborel://` URI or the driver's settings, as `\PDO` is from a DSN | `[DESIGN] D2` | done |
+| S-API-2 | The connection's attributes: errors always raised as exceptions, autocommit, the default fetch mode, the server's version | `[DESIGN] D2` | done |
+| S-API-3 | `prepare` and `query`, with `?` parameters, and `exec` giving the rows a statement changed | `[DESIGN] D2` | done |
+| S-API-4 | `Turborel\Pdo\Statement`: `execute`, `bindValue`, `bindParam`, `rowCount`, `columnCount`, `getColumnMeta` and `closeCursor` | `[DESIGN] D2` | done |
+| S-API-5 | Fetch modes: `FETCH_ASSOC`, `FETCH_NUM`, `FETCH_BOTH`, `FETCH_OBJ`, `FETCH_COLUMN` and `FETCH_CLASS`, by `fetch`, `fetchAll`, `fetchColumn` and iteration | `[DESIGN] D2` | done |
+| S-API-6 | Transactions: `beginTransaction`, `commit`, `rollBack` and `inTransaction` | `[DESIGN] D2` | done |
+| S-API-7 | `lastInsertId`, from the identity values an INSERT generated | `[DESIGN] D2` | done |
+| S-API-8 | Values as PHP types, each SQL type as Appendix A maps it, exact numbers without loss | `[DESIGN] D2` | done |
+| S-API-9 | `TurborelException` from every method, with its SQLSTATE, SQLCODE and `errorInfo` as PDO gives it | `[DESIGN] D2` | done |

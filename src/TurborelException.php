@@ -119,6 +119,16 @@ class TurborelException extends \RuntimeException
     }
 
     /**
+     * The failure as PDO's `errorInfo` gives one: its SQLSTATE, its SQLCODE as the driver's code, and its message.
+     *
+     * @return array{string, int, string}
+     */
+    public function errorInfo(): array
+    {
+        return [$this->sqlState, $this->sqlCode, $this->getMessage()];
+    }
+
+    /**
      * Whether the connection it came on is lost: a connection exception,
      * SQLSTATE class 08 but 08003, which names another connection, or
      * credentials refused as the connection is made, class 28 of SQLCODE
