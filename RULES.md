@@ -416,7 +416,7 @@ least 90 % of lines, and of branches where the tool measures them. It
 only rises: a change that raises coverage well above it raises it. A
 floor below 100 % says why.
 
-The floor is 95 % of lines, kept in `tools/CoverageFloor.php`, which
+The floor is 98 % of lines, kept in `tools/CoverageFloor.php`, which
 reads PHPUnit's Clover report. Branches are not measured: pcov, which CI
 uses, counts lines alone. The floor is below 100 % for the code of one
 platform, a Unix socket or a named pipe, which coverage on Linux does

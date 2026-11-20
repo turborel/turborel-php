@@ -11,7 +11,7 @@ namespace Turborel\Tools;
 final class CoverageFloor
 {
     /** The least share of lines covered, in percent; it only rises (R-COV-2). */
-    public const float FLOOR = 95.0;
+    public const float FLOOR = 98.0;
 
     /** A whole, in percent. */
     private const float WHOLE = 100.0;
