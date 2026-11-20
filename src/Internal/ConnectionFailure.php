@@ -23,6 +23,15 @@ final class ConnectionFailure
     /** SQLCODE -919, a connection lost [PROTOCOL Errors and notices]. */
     public const int SQLCODE = -919;
 
+    /** SQLSTATE 28000, invalid authorization specification: credentials refused as the connection is made. */
+    public const string REFUSED = '28000';
+
+    /** The credentials refused as the connection is made, saying why in `$message`: SQLSTATE 28000, SQLCODE -919. */
+    public static function refused(string $message): TurborelException
+    {
+        return new TurborelException($message, self::REFUSED, self::SQLCODE);
+    }
+
     /** The failure that loses the connection, saying why in `$message`. */
     public static function because(string $message): TurborelException
     {
