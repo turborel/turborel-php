@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Session;
 
-use Turborel\Internal\ValueFailure;
+use Turborel\Internal\Misuse;
 use Turborel\TurborelException;
 
 /**
@@ -38,7 +38,7 @@ final readonly class Target
     /**
      * The server at `$host`, on TCP port `$port`.
      *
-     * @throws TurborelException SQLSTATE 22003 if the port is not one
+     * @throws TurborelException SQLSTATE TB910 if the port is not one
      */
     public static function tcp(string $host, int $port = self::DEFAULT_PORT): self
     {
@@ -54,7 +54,7 @@ final readonly class Target
     /**
      * The server at `$host`, on TCP port `$port`, over TLS as `$tls` says.
      *
-     * @throws TurborelException SQLSTATE 22003 if the port is not one
+     * @throws TurborelException SQLSTATE TB910 if the port is not one
      */
     public static function tls(string $host, Tls $tls, int $port = self::DEFAULT_PORT): self
     {
@@ -87,12 +87,12 @@ final readonly class Target
     /**
      * `$port`, a TCP port.
      *
-     * @throws TurborelException SQLSTATE 22003 if it is not one
+     * @throws TurborelException SQLSTATE TB910 if it is not one
      */
     private static function port(int $port): int
     {
         if ($port < 1 || $port > self::MAX_PORT) {
-            throw ValueFailure::outOfRange("{$port} is not a TCP port");
+            throw Misuse::of("{$port} is not a TCP port");
         }
 
         return $port;

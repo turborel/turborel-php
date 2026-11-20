@@ -30,7 +30,7 @@ final readonly class CopyData implements Request
     /**
      * Its frame.
      *
-     * @throws TurborelException SQLSTATE 07006 if a value has no value of the protocol, 22003 if a field is out of its range, 22021 if a string is not UTF-8
+     * @throws TurborelException SQLSTATE 22000 if a value has no value of the protocol, 22003 if a field is out of its range, 22021 if a string is not UTF-8
      */
     public function encode(): string
     {

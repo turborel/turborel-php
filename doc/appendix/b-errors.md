@@ -10,7 +10,7 @@ characters of the SQLSTATE are its class.
 
 | SQLSTATE | SQLCODE | Raised when | Ends the connection |
 |---|---|---|---|
-| 08006 | -919 | The server is not reached, TLS fails, a wait runs out, a reply cannot be read or comes out of turn, or the connection is lost | yes, but of a capability not granted, refused before anything is sent |
+| 08006 | -919 | The server is not reached, TLS fails, a wait runs out, a reply cannot be read or comes out of turn, or the connection is lost; a capability not granted, or more than 32 attributes or one past its bounds, refused before anything is sent | yes, but of what is refused before anything is sent |
 | 28000 | -919 | A secret would go over plain TCP; SCRAM's exchange is refused | yes, of a login |
 | 22003 | -301 | A number, or a field's value, is out of its range | no |
 | 22021 | -301 | A string is not UTF-8 | no |
@@ -18,8 +18,8 @@ characters of the SQLSTATE are its class.
 | TB916 | -916 | A JSON stored form is damaged | no |
 | 0A000 | -900 | JSON is past turborel's limits, nested more than 128 deep or a stored form past 256 MiB | no |
 | 2200N | -301 | An XML value's text is not well-formed content | no |
-| 07006 | -921 | The protocol has no value for a PHP value | no |
-| TB910 | -910 | The program misused the API where turborel-client has no case of it: a request other than a copy's rows, its end or Ping while the copy is under way, or a delimiter of no use | no |
+| 22000 | -301 | The protocol has no value for a PHP value | no |
+| TB910 | -910 | The program misused the API where turborel-client has no case of it: a request other than a copy's rows, its end or Ping while the copy is under way; a TCP port not one, a timeout not positive, or a delimiter of no use | no |
 | 22000 | -301 | An import's input cannot be read, or does not fit the table: a record of too many or too few fields, a session with a transaction active, a table name that is not one | no |
 | 22001 | -301 | An import's string is longer than its column, found before it is sent | no |
 

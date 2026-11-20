@@ -7,7 +7,7 @@ namespace Turborel\Tests\Unit\Session;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\Test;
-use Turborel\Internal\ValueFailure;
+use Turborel\Internal\Misuse;
 use Turborel\Session\Capability;
 use Turborel\Session\Certificate;
 use Turborel\Session\Defaults;
@@ -38,7 +38,7 @@ final class ConfigurationTest extends CodecTestCase
      * Verifies: [PROTOCOL The Native Protocol] [CLIENT Connecting]: a target
      * is TCP, on port 7422 unless told another, a Unix socket or named
      * pipe, or TLS on the TCP port; a port out of range is refused
-     * (SQLSTATE 22003).
+     * (SQLSTATE TB910).
      *
      * @throws TurborelException never from the ports in range
      */
@@ -50,14 +50,14 @@ final class ConfigurationTest extends CodecTestCase
             (string) Target::local('/run/s'), (string) Target::tls('db', $tls)]);
         self::assertSame([true, false, false], [Target::tcp('db')->isPlainTcp(), Target::local('/s')->isPlainTcp(), Target::tls('db', $tls)->isPlainTcp()]);
         foreach ([0, 65_536] as $port) {
-            self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Target => Target::tcp('db', $port));
+            self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Target => Target::tcp('db', $port));
         }
     }
 
     /**
      * Verifies: [CLIENT Timeouts]: a connection waits 30 seconds to connect
      * and log in, and on each read after with no limit, by default; a
-     * limit not positive is refused (SQLSTATE 22003).
+     * limit not positive is refused (SQLSTATE TB910).
      *
      * @throws TurborelException never from the defaults
      */
@@ -66,8 +66,8 @@ final class ConfigurationTest extends CodecTestCase
     {
         $default = new Timeouts();
         self::assertSame([30.0, null, 60.0], [$default->connect, $default->read, Timeouts::TERMINATE_WITHIN]);
-        self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Timeouts => new Timeouts(0.0));
-        self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Timeouts => new Timeouts(null, -1.0));
+        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Timeouts => new Timeouts(0.0));
+        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Timeouts => new Timeouts(null, -1.0));
     }
 
     /**

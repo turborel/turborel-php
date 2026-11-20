@@ -50,7 +50,7 @@ the rest of this page at M3.
 | 22032 | -301 | JSON text that does not parse, or JSON with no text, a datetime's |
 | TB916 | -916 | A JSON stored form that is damaged, or of another version |
 | 0A000 | -900 | JSON nested more than 128 deep, or a stored form past 256 MiB: turborel's limits |
-| 07006 | -921 | A PHP value no SQL value is, sent as a parameter |
+| 22000 | -301 | A PHP value no SQL value is, sent as a parameter |
 | 08006 | -919 | A value a server sent that cannot be read |
 
 ## EXAMPLES

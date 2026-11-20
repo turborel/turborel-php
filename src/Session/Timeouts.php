@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Session;
 
-use Turborel\Internal\ValueFailure;
+use Turborel\Internal\Misuse;
 use Turborel\TurborelException;
 
 /**
@@ -25,7 +25,7 @@ final readonly class Timeouts
     /**
      * The limits `$connect` and `$read`, in seconds, none for no limit.
      *
-     * @throws TurborelException SQLSTATE 22003 if a limit is not positive
+     * @throws TurborelException SQLSTATE TB910 if a limit is not positive
      */
     public function __construct(
         /** The limit to connect, begin TLS and for each step of the login, in seconds; none for no limit. */
@@ -35,7 +35,7 @@ final readonly class Timeouts
     ) {
         foreach ([$connect, $read] as $limit) {
             if ($limit !== null && !($limit > 0.0)) {
-                throw ValueFailure::outOfRange("a timeout of {$limit} seconds is not positive");
+                throw Misuse::of("a timeout of {$limit} seconds is not positive");
             }
         }
     }

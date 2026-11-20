@@ -187,12 +187,12 @@ final class ValueCodecTest extends CodecTestCase
 
     /**
      * Verifies: [PROTOCOL Values] [DESIGN] D8: a PHP value the protocol has
-     * no value of is refused before it is written (SQLSTATE 07006).
+     * no value of is refused before it is written (SQLSTATE 22000).
      */
     #[Test]
     public function aPhpValueOfNoSqlValueIsRefused(): void
     {
-        self::assertFailure(ValueFailure::RESTRICTED, ValueFailure::DYNAMIC, static fn(): mixed => ValueWriter::write(self::writer(), [1]));
-        self::assertFailure(ValueFailure::RESTRICTED, ValueFailure::DYNAMIC, static fn(): mixed => ValueWriter::write(self::writer(), new \stdClass()));
+        self::assertFailure(ValueFailure::RESTRICTED, ValueFailure::DATA, static fn(): mixed => ValueWriter::write(self::writer(), [1]));
+        self::assertFailure(ValueFailure::RESTRICTED, ValueFailure::DATA, static fn(): mixed => ValueWriter::write(self::writer(), new \stdClass()));
     }
 }

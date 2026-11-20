@@ -9,7 +9,8 @@ use Turborel\TurborelException;
 /**
  * The failures of a value the program gave that the protocol cannot carry:
  * data exceptions (SQLCODE -301), as turborel raises of the same value,
- * and a PHP value of no SQL type (SQLSTATE 07006, SQLCODE -921).
+ * and a PHP value of no SQL type (SQLSTATE 22000, SQLCODE -301, as every
+ * Turborel driver fails a value the protocol cannot carry).
  *
  * @internal
  */
@@ -18,8 +19,6 @@ final class ValueFailure
     /** SQLCODE -301, a data exception, of SQLSTATE class 22. */
     public const int DATA = -301;
 
-    /** SQLCODE -921, a dynamic SQL error, of SQLSTATE class 07. */
-    public const int DYNAMIC = -921;
 
     /** SQLSTATE 22003, numeric value out of range. */
     public const string OUT_OF_RANGE = '22003';
@@ -30,8 +29,8 @@ final class ValueFailure
     /** SQLSTATE 22032, invalid JSON text, and JSON with no text. */
     public const string INVALID_JSON = '22032';
 
-    /** SQLSTATE 07006, restricted data type attribute violation. */
-    public const string RESTRICTED = '07006';
+    /** SQLSTATE 22000, data exception, of a value the protocol cannot carry. */
+    public const string RESTRICTED = '22000';
 
     /** SQLCODE -916, of a stored form that is damaged, as turborel's Code::Corrupt. */
     public const int CORRUPT_CODE = -916;
@@ -87,6 +86,6 @@ final class ValueFailure
     /** A PHP value the protocol has no value for: `$message` says which. */
     public static function restricted(string $message): TurborelException
     {
-        return new TurborelException($message, self::RESTRICTED, self::DYNAMIC);
+        return new TurborelException($message, self::RESTRICTED, self::DATA);
     }
 }

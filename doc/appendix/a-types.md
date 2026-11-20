@@ -96,4 +96,4 @@ value nested more than 128 deep or damaged, each fail the connection
 when a server sends one (SQLSTATE 08006, SQLCODE -919). A value a
 program sends out of its field's range is refused before it is sent,
 with SQLSTATE 22003; a string not UTF-8 with 22021; and a PHP value of
-no SQL value with 07006.
+no SQL value with 22000.

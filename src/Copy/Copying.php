@@ -63,7 +63,7 @@ final class Copying
      *
      * @param list<mixed> $row
      *
-     * @throws TurborelException SQLSTATE 07006 of a value the protocol has none of, or 08006; a row the server refuses comes as `finish`'s failure
+     * @throws TurborelException SQLSTATE 22000 of a value the protocol has none of, or 08006; a row the server refuses comes as `finish`'s failure
      */
     public function send(array $row): void
     {

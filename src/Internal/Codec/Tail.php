@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Codec;
 
-use Turborel\Internal\ValueFailure;
+use Turborel\Internal\ConnectionFailure;
 use Turborel\TurborelException;
 
 /**
@@ -88,7 +88,7 @@ final class Tail
      *
      * @param list<array{string, string}> $attributes
      *
-     * @throws TurborelException SQLSTATE 22003 if they are past their bounds, 22021 if one is not UTF-8
+     * @throws TurborelException SQLSTATE 08006 if they are past their bounds, the connection kept, as the server would fail it; 22021 if one is not UTF-8
      */
     public static function writeAttributes(Writer $writer, array $attributes): void
     {
@@ -96,12 +96,12 @@ final class Tail
             return;
         }
         if (\count($attributes) > self::MAX_ATTRIBUTES) {
-            throw ValueFailure::outOfRange('a message takes at most ' . self::MAX_ATTRIBUTES . ' attributes');
+            throw ConnectionFailure::because('a message takes at most ' . self::MAX_ATTRIBUTES . ' attributes');
         }
         $writer->u8(self::ATTRIBUTES)->u32(\count($attributes));
         foreach ($attributes as [$name, $value]) {
             if (!self::fits($name, $value)) {
-                throw ValueFailure::outOfRange("the attribute '{$name}' is past its bounds: a name of 1 to 64 bytes, a value of at most 1024");
+                throw ConnectionFailure::because("the attribute '{$name}' is past its bounds: a name of 1 to 64 bytes, a value of at most 1024");
             }
             $writer->string($name)->string($value);
         }

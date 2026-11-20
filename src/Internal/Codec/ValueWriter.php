@@ -46,7 +46,7 @@ final class ValueWriter
     /**
      * Writes `$value`.
      *
-     * @throws TurborelException SQLSTATE 07006 if the protocol has no value of it, 22003 if a field is out of range, 22021 if a string is not UTF-8
+     * @throws TurborelException SQLSTATE 22000 if the protocol has no value of it, 22003 if a field is out of range, 22021 if a string is not UTF-8
      */
     public static function write(Writer $writer, mixed $value): Writer
     {
@@ -86,7 +86,7 @@ final class ValueWriter
     /**
      * Writes a value of the classes the rest of `write` does not take.
      *
-     * @throws TurborelException SQLSTATE 07006 if the protocol has no value of it
+     * @throws TurborelException SQLSTATE 22000 if the protocol has no value of it
      */
     private static function composite(Writer $writer, mixed $value): Writer
     {

@@ -131,8 +131,10 @@ final class RequestsTest extends CodecTestCase
 
     /**
      * Verifies: [PROTOCOL The tail] [DESIGN] D8: more than 32 attributes,
-     * a name empty or past 64 bytes, a value past 1024, and a cancel key
-     * not of 16 bytes are refused before they are sent (SQLSTATE 22003).
+     * a name empty or past 64 bytes, or a value past 1024 are refused before
+     * they are sent, with SQLSTATE 08006, as the server would fail the
+     * connection for them, which is kept; a cancel key not of 16 bytes with
+     * SQLSTATE 22003.
      *
      * @throws TurborelException never from 32 attributes
      */
@@ -141,7 +143,7 @@ final class RequestsTest extends CodecTestCase
     {
         $many = array_fill(0, 33, ['a', 'b']);
         foreach ([$many, [['', 'b']], [[str_repeat('n', 65), 'b']], [['a', str_repeat('v', 1025)]]] as $attributes) {
-            self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): string => (new Query('X', false, $attributes))->encode());
+            self::assertConnectionFails(static fn(): string => (new Query('X', false, $attributes))->encode());
         }
         self::assertSame(1 + 4 + 4 + 1 + 1 + 4 + 32 * 10, \strlen((new Query('', false, array_fill(0, 32, ['a', 'b'])))->encode()));
         self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): string => (new Cancel('short'))->encode());
