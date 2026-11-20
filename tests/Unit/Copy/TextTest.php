@@ -119,7 +119,7 @@ final class TextTest extends CodecTestCase
         $shown = [null, 'tea', true, false, 7, new Exact('125', 2), new Binary("\x0A\xFF"), new Reference("\x01"), new Lob(LobKind::Character, 'jam'),
             new Lob(LobKind::Binary, "\x01"), new LobLocator(LobKind::Character, 1, 9, 8), new LobLocator(LobKind::Binary, 1, 9, 0), Json::fromText('{"a":1}'),
             $uuid, new Xml('<a/>'), new PluginValue('POINT', 'POINT(1 2)', '')];
-        self::assertSame(['NULL', 'tea', 'TRUE', 'FALSE', '7', '1.25', '0AFF', '01', 'jam', '01', '<CHARACTER LARGE OBJECT of 8 characters>',
+        self::assertSame(['NULL', 'tea', 'TRUE', 'FALSE', '7', '1.25', '0AFF', 'REF(01)', 'jam', '01', '<CHARACTER LARGE OBJECT of 8 characters>',
             '<BINARY LARGE OBJECT of 9 octets>', '{"a":1}', '919108f7-52d1-4320-9bac-f847db4148a8', '<a/>', 'POINT(1 2)'], array_map(Text::of(...), $shown));
         $parts = [null, "it's", new Binary("\x01"), new Datetime(Moment::Date, 0), new DecFloat('15', -1), new Lob(LobKind::Character, 'x'), new Lob(LobKind::Binary, "\x02"),
             Json::fromText('"q\'"'), new Reference("\x03"), $uuid, new Xml("<a b='c'/>"), new LobLocator(LobKind::Binary, 1, 4, 0), 1.5];

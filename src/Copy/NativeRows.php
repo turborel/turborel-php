@@ -87,7 +87,8 @@ final readonly class NativeRows
         while (\strlen($bytes) < $count) {
             $chunk = fread($input, max(1, $count - \strlen($bytes)));
             if ($chunk === false || $chunk === '') {
-                throw self::notNative('the input ends within a frame');
+                // As Rust's read_exact says of input that ends too soon.
+                throw self::notNative('failed to fill whole buffer');
             }
             $bytes .= $chunk;
         }

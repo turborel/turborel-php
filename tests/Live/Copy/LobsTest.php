@@ -7,6 +7,7 @@ namespace Turborel\Tests\Live\Copy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\Test;
+use Turborel\Internal\Misuse;
 use Turborel\Session\Connection;
 use Turborel\Tests\Support\LiveTestCase;
 use Turborel\TurborelException;
@@ -87,7 +88,8 @@ final class LobsTest extends LiveTestCase
      * Verifies: [CLIENT Large objects] [PROTOCOL Lob 'L'] [PROTOCOL Values]:
      * a value is written a piece at a time, a character split between
      * writes counted once, sent in Appends of a chunk, and passed as a
-     * parameter by its locator; read back, it is as written.
+     * parameter by its locator; read back, it is as written; once
+     * finished, it takes nothing more (SQLSTATE TB910).
      *
      * @throws TurborelException never from the writes
      */
@@ -101,6 +103,9 @@ final class LobsTest extends LiveTestCase
         $writer->write("\xA9" . str_repeat('y', 300_000));
         $written = $writer->finish();
         self::assertSame([300_005, 300_004], [$written->octets, $written->characters]);
+        foreach ([static fn() => $writer->write('z'), $writer->flush(...), $writer->finish(...)] as $after) {
+            self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, $after);
+        }
         $connection->execute($connection->prepare('INSERT INTO L_WRITE VALUES (?)'), [$written]);
         $read = $connection->query('SELECT BODY FROM L_WRITE')->rows[0][0] ?? null;
         self::assertInstanceOf(LobLocator::class, $read);

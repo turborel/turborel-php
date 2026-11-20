@@ -176,15 +176,8 @@ final readonly class Settings
     private static function of(Options $options): self
     {
         $user = $options->get(Options::USER) ?? throw Invalid::because('no user is named: by the program, a service, or TURBOREL_USER');
-        $read = static fn(string $key, \Closure $parse, mixed $default): mixed => ($text = $options->get($key)) === null ? $default : $parse($key, $text);
-        $tls = new TlsFiles(
-            $options->get(Options::TLS_ROOTS),
-            self::read($options, Options::TLS_SYSTEM_ROOTS, Words::boolean(...), false),
-            $options->get(Options::TLS_CERTIFICATE),
-            $options->get(Options::TLS_KEY),
-            $options->get(Options::SERVER_NAME),
-        );
 
+        // Read in turborel-client's order, so a failure names the first setting it does.
         return new self(
             HostList::of($options->get(Options::HOST) ?? self::DEFAULT_HOST, $options->get(Options::PORT) ?? ''),
             $user,
@@ -196,7 +189,13 @@ final readonly class Settings
             $options->get(Options::PASSFILE) ?? self::atHome(self::DEFAULT_PASSFILE),
             self::read($options, Options::TARGET, static fn(string $k, string $t): TargetRole => Words::word(TargetRole::class, $k, $t), TargetRole::Any),
             self::read($options, Options::LOAD_BALANCE, static fn(string $k, string $t): LoadBalance => Words::word(LoadBalance::class, $k, $t), LoadBalance::Disable),
-            $tls,
+            new TlsFiles(
+                $options->get(Options::TLS_ROOTS),
+                self::read($options, Options::TLS_SYSTEM_ROOTS, Words::boolean(...), false),
+                $options->get(Options::TLS_CERTIFICATE),
+                $options->get(Options::TLS_KEY),
+                $options->get(Options::SERVER_NAME),
+            ),
         );
     }
 
@@ -219,14 +218,21 @@ final readonly class Settings
         return $text === null ? $default : $parse($key, $text);
     }
 
-    /** The file `$name` in the home directory, HOME's, else on Windows USERPROFILE's, if there is one. */
+    /**
+     * The file `$name` in the home directory, if there is one, as Rust's `home_dir` finds it: on Windows USERPROFILE's, unless
+     * empty; else HOME's if it is set, even empty, else the user's own, where PHP's posix extension reads it.
+     */
     private static function atHome(string $name): ?string
     {
-        $home = getenv('HOME');
-        if (!\is_string($home) || $home === '') {
-            $home = getenv('USERPROFILE');
+        $home = getenv(\PHP_OS_FAMILY === 'Windows' ? 'USERPROFILE' : 'HOME');
+        if (!\is_string($home) && \PHP_OS_FAMILY !== 'Windows' && \function_exists('posix_getpwuid')) {
+            $user = posix_getpwuid(posix_geteuid());
+            $home = \is_array($user) ? $user['dir'] : false;
+        }
+        if (!\is_string($home) || (\PHP_OS_FAMILY === 'Windows' && $home === '')) {
+            return null;
         }
 
-        return \is_string($home) && $home !== '' ? rtrim($home, '/\\') . \DIRECTORY_SEPARATOR . $name : null;
+        return $home === '' ? $name : rtrim($home, '/\\') . \DIRECTORY_SEPARATOR . $name;
     }
 }

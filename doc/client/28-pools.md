@@ -88,7 +88,7 @@ $held->release();
 ```
 
 ```text
-08001: no connection of the pool's 1 came back within 0.1 seconds
+08001: no connection of the pool's 1 came back within 100ms
 ```
 
 ## STANDARD

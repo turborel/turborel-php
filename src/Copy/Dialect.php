@@ -52,7 +52,10 @@ final readonly class Dialect
     public function withDelimiter(string $delimiter): self
     {
         if (\strlen($delimiter) !== 1 || \ord($delimiter) > 0x7F || str_contains("\"\r\n", $delimiter)) {
-            throw Misuse::of('a delimiter is one ASCII character, not a quote or a line break: ' . json_encode($delimiter));
+            // Shown as Rust's Debug shows a char: quoted by single quotes, its escapes written out.
+            $shown = strtr($delimiter, ['\\' => '\\\\', "'" => "\\'", "\t" => '\\t', "\r" => '\\r', "\n" => '\\n', "\0" => '\\0']);
+
+            throw Misuse::of("a delimiter is one ASCII character, not a quote or a line break: '{$shown}'");
         }
 
         return new self($delimiter, $this->quoted, $this->header, $this->null, $this->maxRecord);

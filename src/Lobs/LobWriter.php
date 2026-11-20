@@ -6,6 +6,7 @@ namespace Turborel\Lobs;
 
 use Turborel\Internal\Lobs\Lobs;
 use Turborel\Internal\Lobs\Pieces;
+use Turborel\Internal\Misuse;
 use Turborel\TurborelException;
 use Turborel\Value\LobKind;
 use Turborel\Value\LobLocator;
@@ -21,6 +22,9 @@ final class LobWriter
 {
     /** What is written and not yet sent. */
     private string $pending = '';
+
+    /** Whether it was finished. */
+    private bool $finished = false;
 
     /** The octets written. */
     private int $octets = 0;
@@ -38,10 +42,11 @@ final class LobWriter
     /**
      * Writes `$octets`, sent an Append of at most a chunk at a time, a character one cut where a character ends.
      *
-     * @throws TurborelException the server's, as SQLSTATE 22021 of a character one's octets not UTF-8, or SQLSTATE 08006
+     * @throws TurborelException the server's, as SQLSTATE 22021 of a character one's octets not UTF-8, or SQLSTATE 08006; TB910 once finished
      */
     public function write(string $octets): void
     {
+        $this->open();
         $this->pending .= $octets;
         $this->octets += \strlen($octets);
         if ($this->kind === LobKind::Character) {
@@ -55,10 +60,11 @@ final class LobWriter
     /**
      * Sends what is written and not yet sent.
      *
-     * @throws TurborelException the server's, or SQLSTATE 08006
+     * @throws TurborelException the server's, or SQLSTATE 08006; TB910 once finished
      */
     public function flush(): void
     {
+        $this->open();
         if ($this->pending === '') {
             return;
         }
@@ -69,13 +75,26 @@ final class LobWriter
     /**
      * The large object written, to pass as a parameter by its locator: valid until its transaction ends.
      *
-     * @throws TurborelException the server's: SQLSTATE 22021 if a character one's octets are not UTF-8, 22001 if it is longer than the longest; or SQLSTATE 08006
+     * @throws TurborelException the server's: SQLSTATE 22021 if a character one's octets are not UTF-8, 22001 if it is longer than the longest; or SQLSTATE 08006; TB910 once finished
      */
     public function finish(): LobLocator
     {
         $this->flush();
+        $this->finished = true;
 
         return new LobLocator($this->kind, $this->locator, $this->octets, $this->characters);
+    }
+
+    /**
+     * That it was not finished, as turborel-client's, whose finishing takes it, has none that was.
+     *
+     * @throws TurborelException SQLSTATE TB910 if it was
+     */
+    private function open(): void
+    {
+        if ($this->finished) {
+            throw Misuse::of('the large object was finished');
+        }
     }
 
     /**

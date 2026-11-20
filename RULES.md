@@ -472,6 +472,9 @@ what PHP can:
 - A named pipe is opened by PHP's `fopen`, which cannot ask
   `SECURITY_IDENTIFICATION` as turborel-client's open does; the server
   may act as the client on that pipe.
+- PHP has no `getaddrinfo`. A host's name resolves to the system's IPv4
+  addresses, then the IPv6 addresses DNS gives, where turborel-client
+  takes the system's addresses in the system's order.
 
 Where turborel-client departs from the behaviour turborel's documents set
 out, or would leave a connection out of step, the driver follows the

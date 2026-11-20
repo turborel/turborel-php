@@ -65,7 +65,7 @@ final class Words
      */
     public static function port(string $key, string $text): int
     {
-        $digits = preg_match('/^\+?(\d+)$/', trim($text), $match) === 1 ? ltrim($match[1], '0') : null;
+        $digits = preg_match('/^\+?(\d+)$/D', self::trim($text), $match) === 1 ? ltrim($match[1], '0') : null;
         if ($digits === null || \strlen($digits) > 5 || (int) $digits > self::MAX_PORT) {
             throw Invalid::because("{$key} is {$text}, no port");
         }
@@ -80,11 +80,23 @@ final class Words
      */
     public static function seconds(string $key, string $text): ?float
     {
-        $digits = preg_match('/^\+?(\d+)$/', trim($text), $match) === 1 ? ltrim($match[1], '0') : null;
+        $digits = preg_match('/^\+?(\d+)$/D', self::trim($text), $match) === 1 ? ltrim($match[1], '0') : null;
         if ($digits === null || \strlen($digits) > 20 || (\strlen($digits) === 20 && strcmp($digits, self::U64_MAX) > 0)) {
             throw Invalid::because("{$key} is {$text}, not a whole number of seconds");
         }
 
         return $digits === '' ? null : (float) $digits;
+    }
+
+    /** `$text` without the white space it begins and ends with, Unicode's, as Rust's `str::trim` takes it off. */
+    public static function trim(string $text): string
+    {
+        return preg_replace('/^\p{White_Space}+|\p{White_Space}+$/Du', '', $text) ?? trim($text);
+    }
+
+    /** `$text` without the white space it begins with, Unicode's, as Rust's `str::trim_start` takes it off. */
+    public static function trimStart(string $text): string
+    {
+        return preg_replace('/^\p{White_Space}+/u', '', $text) ?? ltrim($text);
     }
 }

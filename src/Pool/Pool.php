@@ -60,7 +60,7 @@ final class Pool
                 return $this->make();
             }
             if ((int) hrtime(true) >= $deadline) {
-                throw Invalid::because("no connection of the pool's {$config->max} came back within {$config->wait} seconds");
+                throw Invalid::because("no connection of the pool's {$config->max} came back within " . self::shown($config->wait));
             }
             $this->shared->await();
         }
@@ -90,5 +90,20 @@ final class Pool
 
             throw $failure;
         }
+    }
+
+    /** `$seconds` as Rust's Debug writes a Duration: `30s`, `1.5s`, `500ms`, `20µs` or `7ns`, no trailing zero. */
+    private static function shown(float $seconds): string
+    {
+        $nanos = (int) round($seconds * 1e9);
+        foreach ([[1_000_000_000, 's'], [1_000_000, 'ms'], [1_000, 'µs']] as [$unit, $suffix]) {
+            if ($nanos >= $unit) {
+                $fraction = rtrim(str_pad((string) ($nanos % $unit), \strlen((string) $unit) - 1, '0', \STR_PAD_LEFT), '0');
+
+                return intdiv($nanos, $unit) . ($fraction === '' ? '' : ".{$fraction}") . $suffix;
+            }
+        }
+
+        return "{$nanos}ns";
     }
 }

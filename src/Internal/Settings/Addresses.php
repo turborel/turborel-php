@@ -35,7 +35,7 @@ final class Addresses
         }
         $addresses = self::resolved($host->name);
         if ($addresses === []) {
-            return [["{$host->name}:{$host->port}", ConnectionFailure::because("cannot resolve the name {$host->name}")]];
+            return [["{$host->name}:{$host->port}", ConnectionFailure::because("cannot resolve the name: {$host->name} is not known")]];
         }
         $targets = [];
         foreach ($addresses as $address) {

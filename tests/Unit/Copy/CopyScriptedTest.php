@@ -11,6 +11,7 @@ use Turborel\Copy\Copying;
 use Turborel\Copy\NativeRows;
 use Turborel\Internal\Codec\Frames;
 use Turborel\Internal\Codec\Kind;
+use Turborel\Internal\Misuse;
 use Turborel\Internal\Session\Wire;
 use Turborel\Internal\Transport\Stream;
 use Turborel\Session\Capability;
@@ -33,7 +34,8 @@ final class CopyScriptedTest extends CodecTestCase
      * Verifies: [PROTOCOL CopyData 'J'] [CLIENT Copying and exporting]: rows
      * are sent once about 256 KiB of them wait, the rest at the end; the
      * Complete's count of rows is the copy's; a copy let go of before it
-     * ends is abandoned, and one whose connection is lost is not.
+     * ends is abandoned, and one whose connection is lost is not; one
+     * ended takes nothing more (SQLSTATE TB910).
      *
      * @throws TurborelException never from writing the server's end
      */
@@ -52,6 +54,9 @@ final class CopyScriptedTest extends CodecTestCase
         self::assertGreaterThan(Copying::CHUNK_BYTES, $before, 'a chunk sent before the end');
         self::assertSame(300, $copying->finish());
         self::assertGreaterThan($before, \strlen(Scripted::sent('chunks')), 'the rest sent at the end');
+        foreach ([static fn() => $copying->send($row), static fn() => $copying->finish(), static fn() => $copying->abandon()] as $after) {
+            self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, $after);
+        }
         $wire = new Wire(new Stream(Scripted::open('dropped', Frames::frame(Kind::COMPLETE, self::writer()->u32(0)->string('00000')->flag(false)->bytesWritten()))));
         $wire->told->granted = [Capability::COPY];
         (static function () use ($wire): void {

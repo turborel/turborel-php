@@ -9,6 +9,7 @@ use Turborel\Internal\Codec\Request\CopyEnd;
 use Turborel\Internal\Codec\Request\CopyIn;
 use Turborel\Internal\Codec\ValueWriter;
 use Turborel\Internal\Codec\Writer;
+use Turborel\Internal\Misuse;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Wire;
 use Turborel\Internal\Statements\Results;
@@ -63,10 +64,11 @@ final class Copying
      *
      * @param list<mixed> $row
      *
-     * @throws TurborelException SQLSTATE 22000 of a value the protocol has none of, or 08006; a row the server refuses comes as `finish`'s failure
+     * @throws TurborelException SQLSTATE 22000 of a value the protocol has none of, 08006, or TB910 once the copy has ended; a row the server refuses comes as `finish`'s failure
      */
     public function send(array $row): void
     {
+        $this->going();
         $this->bytes += \strlen(ValueWriter::list(new Writer(), $row)->bytesWritten());
         $this->waiting[] = $row;
         if ($this->bytes >= self::CHUNK_BYTES) {
@@ -77,10 +79,11 @@ final class Copying
     /**
      * Ends the copy: the rows inserted.
      *
-     * @throws TurborelException the copy's failure, every row undone: the table or a column not found, a row of too many or too few values, a value its column refuses, its detail naming the row; or SQLSTATE 08006
+     * @throws TurborelException the copy's failure, every row undone: the table or a column not found, a row of too many or too few values, a value its column refuses, its detail naming the row; or SQLSTATE 08006, or TB910 once the copy has ended
      */
     public function finish(): int|string
     {
+        $this->going();
         $this->flush();
 
         return $this->end(false);
@@ -89,10 +92,11 @@ final class Copying
     /**
      * Gives the copy up: every row of it undone.
      *
-     * @throws TurborelException SQLSTATE 08006 if the connection is lost
+     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or TB910 once the copy has ended
      */
     public function abandon(): void
     {
+        $this->going();
         $this->end(true);
     }
 
@@ -105,6 +109,18 @@ final class Copying
             } catch (TurborelException) {
                 // A failure has lost the connection, which says so at its next request.
             }
+        }
+    }
+
+    /**
+     * That the copy has not ended, as turborel-client's, whose ending takes it, has none that has.
+     *
+     * @throws TurborelException SQLSTATE TB910 if it has
+     */
+    private function going(): void
+    {
+        if ($this->ended) {
+            throw Misuse::of('the copy has ended');
         }
     }
 

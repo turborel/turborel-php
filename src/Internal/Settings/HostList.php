@@ -34,12 +34,12 @@ final class HostList
     {
         $numbers = [];
         foreach (explode(self::LIST, $ports) as $port) {
-            if (trim($port) !== '') {
+            if (Words::trim($port) !== '') {
                 $numbers[] = Words::port(Options::PORT, $port);
             }
         }
         $list = [];
-        foreach (array_map(trim(...), explode(self::LIST, $hosts)) as $at => $name) {
+        foreach (array_map(Words::trim(...), explode(self::LIST, $hosts)) as $at => $name) {
             $list[] = self::host($name, $numbers[$at] ?? (\count($numbers) === 1 ? $numbers[0] : Settings::DEFAULT_PORT));
         }
 

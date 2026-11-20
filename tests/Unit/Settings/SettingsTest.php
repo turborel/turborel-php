@@ -112,14 +112,16 @@ final class SettingsTest extends CodecTestCase
      * Verifies: [CLIENT The service file]: a section is its lines'
      * settings; a section that is not there, a setting before any section,
      * a line without `=`, a key that names no setting, and a service or
-     * service file set by a service are refused, naming the line.
+     * service file set by a service are refused, naming the line; white
+     * space is Unicode's, as Rust's `trim` takes it off; a file not UTF-8,
+     * or of no name, cannot be read.
      *
      * @throws TurborelException never from the files well formed
      */
     #[Test]
     public function aServiceFileIsReadBySection(): void
     {
-        $options = Files::section("[a]\nuser=ann\n[b]\nuser = bob\n  host =  h  \n", 'b', 'services.conf');
+        $options = Files::section("[a]\nuser=ann\n[b]\nuser = bob\n\u{3000}host =  h\u{A0}\n", 'b', 'services.conf');
         self::assertSame(['bob', 'h'], [$options->get(Options::USER), $options->get(Options::HOST)]);
         self::assertStringContainsString('has no service b', self::refusal(static fn() => Files::section("[a]\nuser=ann\n", 'b', 'services.conf')));
         $cases = ["user=ann\n" => 'line 1: a setting comes before any section', "[a]\nuser\n" => 'line 2: a setting is <key> = <value>',
@@ -128,6 +130,9 @@ final class SettingsTest extends CodecTestCase
         foreach ($cases as $text => $why) {
             self::assertStringContainsString($why, self::refusal(static fn() => Files::section($text, 'a', 'services.conf')));
         }
+        $latin = $this->scratch('service-latin1', "[a]\nuser=caf\xE9\n");
+        self::assertStringContainsString('stream did not contain valid UTF-8', self::refusal(static fn() => Settings::service($latin, 'a')));
+        self::assertSame('cannot read : it is no file', self::refusal(static fn() => Settings::service('', 'a')));
     }
 
     /**
@@ -135,7 +140,7 @@ final class SettingsTest extends CodecTestCase
      * matching host, port and user, `*` matching any, `\:` and `\\` taken
      * as they are, an escaped `\*` matching only `*`; comments and short
      * lines skipped; the settings' own password prevails; a file that
-     * cannot be read gives none.
+     * cannot be read, or is not UTF-8, gives none.
      *
      * @throws TurborelException never, the settings being well formed
      */
@@ -151,6 +156,8 @@ final class SettingsTest extends CodecTestCase
         self::assertSame('first', $settings->passwordFor(Host::tcp('db1', 7422)));
         $given = Settings::resolveIn((clone $explicit)->set(Options::PASSWORD, 'given'), self::environment([]));
         self::assertSame('given', $given->passwordFor(Host::tcp('db1', 7422)));
+        file_put_contents($file, "db1:7422:ann:caf\xE9\n");
+        self::assertNull($settings->passwordFor(Host::tcp('db1', 7422)), 'a file not UTF-8 gives none');
         unlink($file);
         self::assertNull($settings->passwordFor(Host::tcp('db1', 7422)), 'a file that cannot be read gives none');
     }
@@ -184,8 +191,9 @@ final class SettingsTest extends CodecTestCase
      * empty one, an IPv6 address whose bracket is not closed or whose port
      * is no number, a list of ports with one that is no number, and a word
      * no channel binding, target, load balance or truth takes are each
-     * refused (SQLSTATE 08001); several hosts of one port each take it; a
-     * service file that cannot be read is refused.
+     * refused (SQLSTATE 08001), the first in turborel-client's order of
+     * reading; several hosts of one port each take it; a service file that
+     * cannot be read is refused.
      *
      * @throws TurborelException never from the settings well formed
      */
@@ -204,6 +212,8 @@ final class SettingsTest extends CodecTestCase
         self::assertFailure(Invalid::SQLSTATE, Invalid::SQLCODE, static fn() => Settings::service(sys_get_temp_dir() . '/turborel-php-no-service-' . getmypid(), 's'));
         self::assertFailure(Invalid::SQLSTATE, Invalid::SQLCODE, static fn() => $settings([Options::PORT => '65536']));
         self::assertEquals([Host::tcp('h', 7), Host::tcp('::1', 7422)], $settings([Options::HOST => 'h:+0007,::1'])->hosts);
+        $first = self::refusal(static fn() => $settings([Options::TLS_SYSTEM_ROOTS => 'sometimes', Options::LOAD_BALANCE => 'sometimes', Options::HOST => 'a,,b']));
+        self::assertSame('a host of the list is empty', $first, 'read in turborel-client\'s order');
     }
 
     /**

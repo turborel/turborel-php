@@ -42,9 +42,13 @@ final class Files
      */
     public static function service(string $file, string $name): Options
     {
-        [$text, $warning] = Quietly::call(static fn(): string|false => is_dir($file) ? false : file_get_contents($file));
+        [$text, $warning] = Quietly::call(static fn(): string|false => $file === '' || is_dir($file) ? false : file_get_contents($file));
         if (!\is_string($text)) {
             throw Invalid::because("cannot read {$file}: " . ($warning ?? 'it is no file'));
+        }
+        if (preg_match('//u', $text) !== 1) {
+            // As Rust's read_to_string says of a file not UTF-8.
+            throw Invalid::because("cannot read {$file}: stream did not contain valid UTF-8");
         }
 
         return self::section($text, $name, $file);
@@ -59,13 +63,13 @@ final class Files
     {
         [$found, $current] = [null, null];
         foreach (self::lines($text) as $at => $line) {
-            $line = trim($line);
+            $line = Words::trim($line);
             if ($line === '' || str_starts_with($line, self::COMMENT)) {
                 continue;
             }
             $n = $at + 1;
             if (str_starts_with($line, '[')) {
-                $current = str_ends_with($line, ']') ? trim(substr($line, 1, -1)) : throw self::at($file, $n, 'a section\'s name ends with ]');
+                $current = str_ends_with($line, ']') ? Words::trim(substr($line, 1, -1)) : throw self::at($file, $n, 'a section\'s name ends with ]');
                 continue;
             }
             $section = $current ?? throw self::at($file, $n, 'a setting comes before any section');
@@ -84,7 +88,7 @@ final class Files
     public static function password(string $text, string $host, string $port, string $user): ?string
     {
         foreach (self::lines($text) as $line) {
-            if (str_starts_with(ltrim($line), self::COMMENT)) {
+            if (str_starts_with(Words::trimStart($line), self::COMMENT)) {
                 continue;
             }
             $fields = self::fields($line);
@@ -96,12 +100,12 @@ final class Files
         return null;
     }
 
-    /** The text of the file at `$path`, if it can be read and is a regular file, a link followed to one; none otherwise. */
+    /** The text of the file at `$path`, if it can be read, is UTF-8 and is a regular file, a link followed to one; none otherwise. */
     public static function readRegular(string $path): ?string
     {
         [$text] = Quietly::call(static fn(): string|false => is_file($path) ? file_get_contents($path) : false);
 
-        return \is_string($text) ? $text : null;
+        return \is_string($text) && preg_match('//u', $text) === 1 ? $text : null;
     }
 
     /**
@@ -115,12 +119,12 @@ final class Files
             throw self::at($file, $n, 'a setting is <key> = <value>');
         }
         [$key, $value] = explode('=', $line, 2) + ['', ''];
-        $key = trim($key);
+        $key = Words::trim($key);
         if ($key === Options::SERVICE || $key === Options::SERVICE_FILE) {
             throw self::at($file, $n, "a service cannot set {$key}");
         }
         try {
-            return (new Options())->set($key, trim($value));
+            return (new Options())->set($key, Words::trim($value));
         } catch (TurborelException $wrong) {
             throw self::at($file, $n, $wrong->getMessage());
         }
