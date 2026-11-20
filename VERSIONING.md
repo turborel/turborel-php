@@ -47,12 +47,18 @@ refuses the connection (SQLSTATE 08004).
 
 ## Where the version is
 
-- composer.json's `version`, which `Turborel\Turborel::VERSION` is held to by a test holds the number, written once. Everything else
+- composer.json's `version` holds the number, written once. Everything else
   that carries it, the package's metadata and what the library tells a
   program, takes it from there or is held to it by a test.
-- A release is tagged `v` and its number, as `v0.0.0`. turborel.com's
+- A release is tagged with exactly the tag Turborel's own release
+  uses, the same name with the same `v` prefix, as `v0.1.0`, on the
+  commit whose `doc/` describes that release. turborel.com's
   documentation site reads the manual, `doc/`, from `main` while there
-  is no release, and at each release's tag once there are.
+  is no release, and at each release's tag once there are. A Turborel
+  release this repository has no tag for is left out of the driver's
+  docs for that version; it never falls back to `main`. If this tag is
+  pushed after the server's release, run the docs-site workflow by
+  hand so the site picks it up.
 
 ## Publishing
 
@@ -65,7 +71,7 @@ A release is published by the owner alone, from a clean checkout of a
 pushed commit that has passed `composer verify` and
 `composer coverage` in CI on every platform:
 
-1. Set the release's number in composer.json's `version`, which `Turborel\Turborel::VERSION` is held to by a test, in a commit of its
+1. Set the release's number in composer.json's `version`, in a commit of its
    own.
 2. Run the workflow **release** by hand, on that commit. It builds the
    package and checks it, and keeps what it built as the run's

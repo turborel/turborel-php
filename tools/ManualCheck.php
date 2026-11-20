@@ -8,7 +8,9 @@ namespace Turborel\Tools;
  * The manual's layout, which turborel.com's documentation site reads
  * (RULES.md R-DOC-7): each page opens with its `# Title` and a line
  * holding only `[Contents](README.md)`, each volume's README.md lists its
- * pages, and a link of the manual stays within `doc/` or is a full URL.
+ * pages, `user/01-installing.md` keeps its name, and the manual holds no
+ * image. Its relative links resolve, as LinkCheck checks of every
+ * document; the site points those that leave `doc/` at GitHub.
  */
 final class ManualCheck
 {
@@ -27,11 +29,14 @@ final class ManualCheck
     /** The line, counting from 0, that holds a page's contents link: after its title and a blank line. */
     private const int CONTENTS_AT = 2;
 
-    /** A link's target that leaves the manual, or stays on its page. */
-    private const string ELSEWHERE = '/^([a-z][a-z0-9+.-]*:|#)/i';
+    /** The page of installing, which the site links to by its name. */
+    private const string INSTALLING = 'user/01-installing.md';
 
-    /** A Markdown link's target. */
-    private const string LINK = '/\]\(([^)\s]+)\)/';
+    /** A page's extension. */
+    private const string PAGE = 'md';
+
+    /** An image in Markdown, or in HTML. */
+    private const string IMAGE = '/!\[|<img\b/i';
 
     /**
      * What breaks R-DOC-7's layout in the manual under `$root`.
@@ -45,8 +50,30 @@ final class ManualCheck
         foreach (self::glob($manual . '/*', \GLOB_ONLYDIR) as $volume) {
             $findings = [...$findings, ...self::volume($volume)];
         }
+        if (!is_file($manual . '/' . self::INSTALLING)) {
+            $findings[] = "{$manual}/" . self::INSTALLING . ': the page of installing keeps its name (R-DOC-7)';
+        }
+
+        return [...$findings, ...self::images($manual)];
+    }
+
+    /**
+     * The images, and other files than pages, in the manual at `$manual`.
+     *
+     * @return list<string>
+     */
+    private static function images(string $manual): array
+    {
+        $findings = [];
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($manual, \FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file instanceof \SplFileInfo && $file->getExtension() !== self::PAGE) {
+                $findings[] = "{$file->getPathname()}: the manual holds pages alone, no image or other file (R-DOC-7)";
+            }
+        }
         foreach (LinkCheck::documents($manual) as $page) {
-            $findings = [...$findings, ...self::links($manual, $page)];
+            if (preg_match(self::IMAGE, LinkCheck::prose($page)) === 1) {
+                $findings[] = "{$page}: the manual holds no image (R-DOC-7)";
+            }
         }
 
         return $findings;
@@ -84,26 +111,6 @@ final class ManualCheck
             }
             if (!str_contains($contents, "]({$name})")) {
                 $findings[] = "{$volume}/README.md: does not list {$name} (R-DOC-7)";
-            }
-        }
-
-        return $findings;
-    }
-
-    /**
-     * The links of `$page` that leave the manual at `$manual` without a full URL.
-     *
-     * @return list<string>
-     */
-    private static function links(string $manual, string $page): array
-    {
-        preg_match_all(self::LINK, LinkCheck::prose($page), $links);
-        $findings = [];
-        foreach ($links[1] as $link) {
-            $target = realpath(\dirname($page) . '/' . explode('#', $link, 2)[0]);
-            $inside = $target !== false && str_starts_with(str_replace('\\', '/', $target), str_replace('\\', '/', (string) realpath($manual)));
-            if (preg_match(self::ELSEWHERE, $link) !== 1 && !$inside) {
-                $findings[] = "{$page}: the link {$link} leaves doc/; it is a full URL (R-DOC-7)";
             }
         }
 

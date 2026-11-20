@@ -15,7 +15,8 @@
     "support": {
         "issues": "https://github.com/turborel/turborel-php/issues",
         "source": "https://github.com/turborel/turborel-php",
-        "security": "https://github.com/turborel/turborel-php/security/policy"
+        "security": "https://github.com/turborel/turborel-php/security/policy",
+        "docs": "https://turborel.com/docs/drivers/php/"
     },
     "authors": [
         {
