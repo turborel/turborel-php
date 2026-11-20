@@ -60,13 +60,14 @@ final class DocCheck
                 $items["{$name}::{$constant->getName()}"] = $constant->getDocComment();
             }
         }
-        foreach ($class->getProperties(self::VISIBLE) as $property) {
+        // An enum's `name` and `value`, and its `cases`, `from` and `tryFrom`, are PHP's own, documented by PHP.
+        foreach ($class->isEnum() ? [] : $class->getProperties(self::VISIBLE) as $property) {
             if ($property->getDeclaringClass()->getName() === $name) {
                 $items["{$name}::\${$property->getName()}"] = $property->getDocComment();
             }
         }
         foreach ($class->getMethods(self::VISIBLE) as $method) {
-            if ($method->getDeclaringClass()->getName() === $name) {
+            if ($method->getDeclaringClass()->getName() === $name && !$method->isInternal()) {
                 $items["{$name}::{$method->getName()}()"] = $method->getDocComment();
             }
         }

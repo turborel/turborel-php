@@ -11,7 +11,9 @@ namespace Turborel;
  * with no C extension and no dependency at run time beyond ext-openssl
  * (RULES.md D1, D15). Its standard interface is a PDO-style API of its own
  * (RULES.md D2). Every failure it raises is a {@see TurborelException},
- * carrying the SQLSTATE and SQLCODE of what went wrong.
+ * carrying the SQLSTATE and SQLCODE of what went wrong. The values it
+ * reads and sends are PHP's own, or classes of `Turborel\Value`, and the
+ * types of columns and parameters are classes of `Turborel\Type`.
  *
  * The driver is in alpha, version 0.0.0: anything may change from one
  * build to the next (VERSIONING.md).

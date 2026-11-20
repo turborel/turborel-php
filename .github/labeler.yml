@@ -3,7 +3,7 @@
 
 area/codec:
   - changed-files:
-      - any-glob-to-any-file: ["src/Internal/Codec/**", "tests/*/Internal/Codec/**"]
+      - any-glob-to-any-file: ["src/Internal/Codec/**", "tests/*/Internal/Codec/**", "src/Value/**", "tests/*/Value/**", "src/Type/**", "tests/*/Type/**"]
 
 area/transport:
   - changed-files:
