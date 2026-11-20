@@ -22,8 +22,8 @@ use Turborel\Value\LobKind;
  * SQL type's name, the one it was declared with where `declared-types` was
  * granted, as INTEGER, else its type's kind; the PDO type it reads as, its
  * length and precision, `not_null` among its flags where it takes no null,
- * and, as PDO's sqlite driver gives `sqlite:decl_type`, `turborel:decl_type`,
- * its whole type as SQL writes it.
+ * and `turborel:decl_type`, the driver's own key, its whole type as SQL
+ * writes it, as DECIMAL(9,2).
  *
  * @internal
  */

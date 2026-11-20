@@ -55,7 +55,7 @@ final class PdoTest extends LiveTestCase
         $settings = Settings::resolveIn((new Options())->set(Options::USER, 'bob')->set(Options::HOST, '127.0.0.1')->set(Options::PORT, (string) LiveServer::PORT)
             ->set(Options::PASSWORD, LiveServer::BOB_PASSWORD)->set(Options::TLS_MODE, 'require'), static fn(string $name): mixed => null);
         self::assertSame('BOB', Connection::fromSettings($settings)->client()->authorization());
-        self::assertFailure('08001', -919, static fn(): Connection => new Connection('postgres://ann@db'));
+        self::assertFailure('08001', -919, static fn(): Connection => new Connection('other://ann@db'));
     }
 
     /**
