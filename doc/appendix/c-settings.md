@@ -25,5 +25,18 @@ query and a service file. Ten of them may come from the environment.
 | `tls_certificate`, `tls_key` | | PEM files of the client's certificate chain and key, to present | none |
 | `server_name` | | The name the server's certificate is checked against | the host's |
 
-`~` is the home directory: HOME, else on Windows USERPROFILE. The
-settings a pool takes come at milestone M6.
+`~` is the home directory: HOME, else on Windows USERPROFILE.
+
+## A pool's settings
+
+`PoolConfig` takes these parts by name, each time in seconds:
+
+| Part | What it says | Default |
+|---|---|---|
+| `max` | The most connections made at once | 10 |
+| `maxIdle` | The most kept idle | 10 |
+| `idleTimeout` | How long one may stay idle; none, as long as it lives | 600 |
+| `maxLifetime` | How long one lives from when it was made; none, without limit | 3600 |
+| `wait` | How long `get` waits for one to come back | 30 |
+| `check` | Whether an idle connection is checked to answer before it is handed out | true |
+| `reset` | Statements run as each comes back, after the pool's own | none |

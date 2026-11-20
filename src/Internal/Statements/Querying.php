@@ -112,11 +112,11 @@ final readonly class Querying
     }
 
     /**
-     * One statement's outcome: a query's columns, rows and last Complete, or another's Complete.
+     * One statement's outcome, the reply to a Query sent: a query's columns, rows and last Complete, or another's Complete.
      *
      * @throws TurborelException the statement's failure, or SQLSTATE 08006 if another reply comes
      */
-    private function outcome(): Outcome
+    public function outcome(): Outcome
     {
         $reply = $this->wire->receive();
         if ($reply instanceof Complete) {

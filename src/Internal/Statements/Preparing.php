@@ -71,6 +71,17 @@ final readonly class Preparing
     public function execute(Statement $statement, array $values): Outcome
     {
         $this->wire->send(new Execute($statement->number, $values, 0, $this->autocommit, new Extras($this->wire->told->attributes())));
+
+        return $this->executed($statement);
+    }
+
+    /**
+     * The reply to an Execute of `$statement` sent: a query's rows, all of them, a CALL's output row, or another's completion.
+     *
+     * @throws TurborelException the statement's failure, or SQLSTATE 08006 if another reply comes
+     */
+    public function executed(Statement $statement): Outcome
+    {
         if ($statement->columns === []) {
             return new Outcome([], [], Completed::of($this->results->completion()));
         }

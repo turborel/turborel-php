@@ -20,6 +20,7 @@ use Turborel\Internal\Statements\Querying;
 use Turborel\Internal\Transport\Opener;
 use Turborel\Internal\Transport\Stream;
 use Turborel\Lobs\LobWriter;
+use Turborel\Pipeline\Pipeline;
 use Turborel\Statements\Batch;
 use Turborel\Statements\Completed;
 use Turborel\Statements\Outcome;
@@ -241,6 +242,12 @@ final class Connection
     public function queryMany(string $sql): Ran
     {
         return (new Querying($this->wire, $this->autocommit))->many($sql);
+    }
+
+    /** A pipeline of requests on this connection, empty, continuing past a failure [CLIENT Pipelines]. */
+    public function pipeline(): Pipeline
+    {
+        return new Pipeline($this->wire, $this->autocommit);
     }
 
     /**
