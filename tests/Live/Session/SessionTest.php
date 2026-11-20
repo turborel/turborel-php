@@ -157,8 +157,10 @@ final class SessionTest extends LiveTestCase
     /**
      * Verifies: [PROTOCOL ChangeUser 'U'] [CLIENT Controlling the session]:
      * a connection authenticated again as another user, by the same
-     * Challenge and Answer steps as Hello's, is that user's new session;
-     * refused, the connection fails.
+     * Challenge and Answer steps as Hello's, is that user's new session,
+     * renewed as by Reset: its transaction rolled back, told by notice
+     * 01T01, none active after (RULES.md D8), under a new cancel key, with
+     * the same capabilities; refused, the connection fails.
      *
      * @throws TurborelException never from the accepted change
      */
@@ -167,8 +169,12 @@ final class SessionTest extends LiveTestCase
     {
         $connection = Connection::connect(self::socket(), 'ann', new Trust());
         $before = $connection->canceller();
+        $connection->query('VALUES 1');
+        self::assertTrue($connection->inTransaction());
+        $granted = $connection->granted();
         $connection->changeUser('bob', new Scram(LiveServer::BOB_PASSWORD));
-        self::assertSame(['BOB', 'BOB'], [$connection->authorization(), $connection->setting('AUTHORIZATION')]);
+        self::assertSame(['BOB', 'BOB', false, $granted], [$connection->authorization(), $connection->setting('AUTHORIZATION'), $connection->inTransaction(), $connection->granted()]);
+        self::assertSame('01T01', ($connection->takeNotices()[0] ?? null)?->sqlState);
         self::assertNotEquals($before, $connection->canceller(), 'a new cancel key');
         self::assertFailure(ConnectionFailure::REFUSED, ConnectionFailure::SQLCODE, static fn() => $connection->changeUser('ann', new Scram('wrong')));
         self::assertTrue($connection->isLost());
