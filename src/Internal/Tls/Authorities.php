@@ -12,7 +12,8 @@ use Turborel\TurborelException;
  * The certificate authorities a TLS client trusts: those of a PEM file,
  * the platform's, or both [CLIENT Connecting]. The platform's are
  * OpenSSL's: the file and directory SSL_CERT_FILE and SSL_CERT_DIR name,
- * if set, else those PHP's OpenSSL was built with.
+ * instead of the platform's if either is set, as rustls-native-certs takes
+ * them; else those PHP's OpenSSL was built with.
  *
  * @internal
  */
@@ -39,6 +40,12 @@ final readonly class Authorities
         return new self(null, null, null, null);
     }
 
+    /** Whether any authority is trusted. */
+    public function any(): bool
+    {
+        return $this->file !== null || $this->platformFile !== null || $this->platformDirectory !== null;
+    }
+
     /**
      * The authorities of the PEM file `$path`, if any, and the platform's if `$platform`.
      *
@@ -50,9 +57,11 @@ final readonly class Authorities
         if (!$platform) {
             return new self($file, $path, null, null);
         }
-        $locations = openssl_get_cert_locations();
-        $platformFile = self::existing(self::variable('SSL_CERT_FILE') ?? ($locations['default_cert_file'] ?? null), is_file(...));
-        $platformDirectory = self::existing(self::variable('SSL_CERT_DIR') ?? ($locations['default_cert_dir'] ?? null), is_dir(...));
+        // As rustls-native-certs: the files the environment names instead of the platform's, if it names either.
+        [$named, $locations] = [[self::variable('SSL_CERT_FILE'), self::variable('SSL_CERT_DIR')], openssl_get_cert_locations()];
+        $chosen = $named !== [null, null] ? $named : [$locations['default_cert_file'] ?? null, $locations['default_cert_dir'] ?? null];
+        $platformFile = self::existing($chosen[0], is_file(...));
+        $platformDirectory = self::existing($chosen[1], is_dir(...));
         if ($platformFile === null && $platformDirectory === null) {
             throw ConnectionFailure::because('cannot trust the platform\'s certificate authorities: it holds none');
         }

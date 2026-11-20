@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Turborel\Internal\ConnectionFailure;
 use Turborel\Internal\Quietly;
 use Turborel\Session\Certificate;
+use Turborel\Session\ChannelBinding;
 use Turborel\Session\Connection;
 use Turborel\Session\Password;
 use Turborel\Session\Scram;
@@ -64,10 +65,10 @@ final class ConnectingTest extends LiveTestCase
     public function aPasswordIsProvedOverASocketAndOverTls(): void
     {
         foreach ([self::socket(), self::tls()] as $target) {
-            $scram = new Scram(LiveServer::BOB_PASSWORD);
+            // Binding required over TLS, so the login is SCRAM-SHA-256-PLUS or none.
+            $scram = (new Scram(LiveServer::BOB_PASSWORD))->channelBinding($target->tls === null ? ChannelBinding::Prefer : ChannelBinding::Require);
             $connection = Connection::connect($target, 'bob', $scram);
             self::assertSame('BOB', $connection->authorization());
-            self::assertSame($target->tls === null ? Scram::NAME : Scram::NAME_PLUS, $scram->name());
             $connection->terminate();
         }
         $connection = Connection::connect(self::tls(), 'ann', new Password(LiveServer::ANN_PASSWORD));
@@ -173,10 +174,11 @@ final class ConnectingTest extends LiveTestCase
         $context = stream_context_create(['ssl' => ['cafile' => self::server()->pki->authority, 'peer_name' => 'localhost', 'capture_peer_cert' => true]]);
         [$stream] = Quietly::call(static fn(): mixed => stream_socket_client('tls://127.0.0.1:' . LiveServer::PORT, $code, $message, 5.0, \STREAM_CLIENT_CONNECT, $context));
         self::assertIsResource($stream);
-        $scram = new Scram(LiveServer::BOB_PASSWORD);
+        $scram = (new Scram(LiveServer::BOB_PASSWORD))->channelBinding(ChannelBinding::Require);
         $scram->bind(TlsChannel::of($stream));
+        self::assertSame(Scram::NAME_PLUS, $scram->name());
         $connection = Connection::open($stream, 'bob', $scram);
-        self::assertSame([Scram::NAME_PLUS, 'BOB', null, null, null], [$scram->name(), $connection->authorization(), $connection->canceller(), $connection->target(), $connection->readTimeout()]);
+        self::assertSame(['BOB', null, null, null], [$connection->authorization(), $connection->canceller(), $connection->target(), $connection->readTimeout()]);
         self::assertConnectionFails(static fn() => $connection->setReadTimeout(1.0));
         $connection->terminate();
     }

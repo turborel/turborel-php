@@ -19,8 +19,8 @@ final readonly class Exact implements SqlValue
     /** A number written in digits, with a point or not. */
     private const string NUMERAL = '/^([+-]?)([0-9]*)(?:\.([0-9]*))?$/';
 
-    /** [DESIGN] The most zeros written after a point before the number is written with an exponent instead, so a scale the protocol allows cannot make its text without bound. */
-    private const int MAX_PLAIN_ZEROS = 1000;
+    /** The largest scale written in digits, as turborel's MAX_EXACT_PRECISION: past it, the number is written with an exponent, as turborel writes it, so a scale the protocol allows cannot make its text without bound. */
+    private const int MAX_PLAIN_SCALE = 18;
 
     /** The largest scale: a u32. */
     private const int MAX_SCALE = 0xFFFF_FFFF;
@@ -62,8 +62,8 @@ final readonly class Exact implements SqlValue
 
     /**
      * The number written in digits, its point before its last `scale`
-     * digits, as `-0.005`; past MAX_PLAIN_ZEROS zeros after the point, its
-     * units and an exponent, as `5E-2000`.
+     * digits, as `-0.005`; of a scale past 18, which no data type has, its
+     * units and an exponent, as `5E-20`, as turborel writes it.
      */
     public function __toString(): string
     {
@@ -72,7 +72,7 @@ final readonly class Exact implements SqlValue
         if ($this->scale === 0) {
             return $this->units;
         }
-        if ($this->scale - \strlen($digits) > self::MAX_PLAIN_ZEROS) {
+        if ($this->scale > self::MAX_PLAIN_SCALE) {
             return "{$this->units}E-{$this->scale}";
         }
         $digits = str_pad($digits, $this->scale + 1, '0', \STR_PAD_LEFT);

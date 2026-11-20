@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Turborel\Internal\Misuse;
 use Turborel\Internal\ValueFailure;
 use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
@@ -28,6 +29,7 @@ use Turborel\Value\Uuid;
 #[CoversNamespace('Turborel\Value')]
 #[CoversNamespace('Turborel\Internal\Codec')]
 #[CoversClass(ValueFailure::class)]
+#[CoversClass(Misuse::class)]
 #[CoversClass(TurborelException::class)]
 final class ValuesTest extends CodecTestCase
 {
@@ -65,8 +67,8 @@ final class ValuesTest extends CodecTestCase
     /**
      * Verifies: [PROTOCOL Values] [DESIGN] D8: text that is no exact
      * number, units past an i128 and a scale past a u32 are refused
-     * (SQLSTATE 22003); a scale far past its digits is shown with an
-     * exponent.
+     * (SQLSTATE 22003); a scale past 18, which no data type has, is shown
+     * with an exponent, as turborel shows it.
      *
      * @throws TurborelException never from the number in range
      */
@@ -79,6 +81,7 @@ final class ValuesTest extends CodecTestCase
         self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Exact => new Exact('1', -1));
         self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Exact => new Exact('1', 0x1_0000_0000));
         self::assertSame('-5E-2000', (string) new Exact('-5', 2000));
+        self::assertSame(['0.000000000000000001', '1E-19', '-123E-25'], [(string) new Exact('1', 18), (string) new Exact('1', 19), (string) new Exact('-123', 25)]);
     }
 
     /**
@@ -104,9 +107,13 @@ final class ValuesTest extends CodecTestCase
 
     /**
      * Verifies: [PROTOCOL Values] [DESIGN] D8: a datetime's precision is a
-     * u8 and its displacement an i16's; an interval's precisions u32s and
+     * u8 and its displacement an i16's; an interval's precisions u32s, kept
+     * as turborel keeps them, the leading at most 9 and the fraction at most
+     * 6, none unless the end field is SECOND; and
      * its units an i128; a character large object's octets UTF-8; a UUID
-     * 16 octets, its text 32 hexadecimal digits in groups.
+     * 16 octets, else SQLSTATE TB910; its text, as turborel's CAST reads
+     * it, 32 hexadecimal digits, a hyphen allowed after each group of four,
+     * trimmed, braced or not, else SQLSTATE 22018.
      *
      * @throws TurborelException never from those in range
      */
@@ -118,15 +125,21 @@ final class ValuesTest extends CodecTestCase
             [ValueFailure::OUT_OF_RANGE, static fn(): Datetime => new Datetime(Moment::Date, 0, -32_769)],
             [ValueFailure::OUT_OF_RANGE, static fn(): Qualifier => new Qualifier(IntervalField::Day, IntervalField::Day, -1)],
             [ValueFailure::OUT_OF_RANGE, static fn(): Interval => new Interval(new Qualifier(IntervalField::Day, IntervalField::Day), '1.5')],
-            [ValueFailure::OUT_OF_RANGE, static fn(): Uuid => new Uuid('short')],
-            [ValueFailure::OUT_OF_RANGE, static fn(): Uuid => Uuid::fromText('919108f7-52d1-4320-9bac-f847db4148a')],
+            [ValueFailure::INVALID_FOR_CAST, static fn(): Uuid => Uuid::fromText('919108f7-52d1-4320-9bac-f847db4148a')],
+            [ValueFailure::INVALID_FOR_CAST, static fn(): Uuid => Uuid::fromText('{919108f7-52d1-4320-9bac-f847db4148a8')],
+            [ValueFailure::INVALID_FOR_CAST, static fn(): Uuid => Uuid::fromText('919108f7--52d1-4320-9bac-f847db4148a8')],
             [ValueFailure::NOT_IN_REPERTOIRE, static fn(): Lob => new Lob(LobKind::Character, "\xFF")],
         ];
         foreach ($refused as [$sqlState, $attempt]) {
             self::assertFailure($sqlState, ValueFailure::DATA, $attempt);
         }
+        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Uuid => new Uuid('short'));
+        $kept = [new Qualifier(IntervalField::Day, IntervalField::Day, 20, 7), new Qualifier(IntervalField::Day, IntervalField::Second, 2, 9)];
+        self::assertSame([[9, 0], [2, 6]], array_map(static fn(Qualifier $q): array => [$q->leading, $q->fraction], $kept));
         $text = '919108f7-52d1-4320-9bac-f847db4148a8';
-        self::assertSame($text, (string) Uuid::fromText(strtoupper($text)));
+        foreach ([strtoupper($text), " {919108F752D143209BACF847DB4148A8}\t", '9191-08f7-52d1-4320-9bac-f847-db41-48a8'] as $written) {
+            self::assertSame($text, (string) Uuid::fromText($written), $written);
+        }
         self::assertSame("\xFF", (new Lob(LobKind::Binary, "\xFF"))->octets);
     }
 }

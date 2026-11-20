@@ -38,6 +38,9 @@ final class TypeCodec
     /** [DESIGN] The most parameters a plug-in's type has, as turborel reads them. */
     public const int MAX_PLUGIN_PARAMETERS = 2;
 
+    /** turborel's mark of a plug-in type's parameter not written, u32::MAX: no parameter is it. */
+    private const int ABSENT = 0xFFFF_FFFF;
+
     /** [DESIGN] The greatest maximum cardinality of an array type, as turborel takes it. */
     public const int MAX_CARDINALITY = 65_535;
 
@@ -99,7 +102,7 @@ final class TypeCodec
     /**
      * A plug-in's type: its name, then its parameters.
      *
-     * @throws TurborelException SQLSTATE 08006 if it is malformed or has too many parameters
+     * @throws TurborelException SQLSTATE 08006 if it is malformed, has too many parameters, or one is u32::MAX
      */
     private static function plugin(Reader $reader): PluginType
     {
@@ -107,7 +110,8 @@ final class TypeCodec
         $parameters = [];
         for ($count = $reader->u32(); $count > 0; $count--) {
             $parameters[] = $reader->u32();
-            if (\count($parameters) > self::MAX_PLUGIN_PARAMETERS) {
+            // turborel's TypeParams::of: no more than two, none u32::MAX, its mark of a parameter not written.
+            if (\count($parameters) > self::MAX_PLUGIN_PARAMETERS || end($parameters) === self::ABSENT) {
                 throw $reader->malformed('a type has too many parameters');
             }
         }

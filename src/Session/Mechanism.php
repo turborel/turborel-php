@@ -13,7 +13,7 @@ use Turborel\TurborelException;
  */
 interface Mechanism
 {
-    /** Its name, as Hello names it. */
+    /** Its name, as Hello names it; asked before `initial`, which may change it. */
     public function name(): string;
 
     /** Its first bytes, which Hello carries; called once a login begins. */

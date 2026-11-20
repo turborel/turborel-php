@@ -123,7 +123,8 @@ final class LoopbackTest extends CodecTestCase
         $failure = TurborelException::fromServer(Failure::read(self::reader($body)));
         self::assertSame(['R', 3, true, ['severity' => 'ERROR']], [$failure->getRule(), $failure->getPosition(), $failure->isTransactionActive(), $failure->getDiagnostics()]);
         $plain = new TurborelException('x', '08006', -919);
-        self::assertSame([null, null, null, []], [$plain->getRule(), $plain->getPosition(), $plain->isTransactionActive(), $plain->getDiagnostics()]);
+        self::assertSame([null, null, null, ['severity' => 'FATAL']], [$plain->getRule(), $plain->getPosition(), $plain->isTransactionActive(), $plain->getDiagnostics()]);
+        self::assertSame(['severity' => 'ERROR'], (new TurborelException('x', '22003', -301))->getDiagnostics());
     }
 
     /**

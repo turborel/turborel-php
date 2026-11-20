@@ -25,13 +25,18 @@ final class StreamTest extends CodecTestCase
      * Verifies: [CLIENT Timeouts] [CLIENT Connecting]: a stream closed,
      * by the driver or under it, is bounded, written and read no more: each
      * fails as the connection's failure (SQLSTATE 08006), never PHP's own
-     * error of a resource closed; it has nothing waiting.
+     * error of a resource closed; it has nothing waiting. An open one is
+     * not bounded to zero, as Rust's standard library refuses it.
+     *
+     * @throws TurborelException never from bounding the open stream to no limit
      */
     #[Test]
     public function aClosedStreamFailsAsTheConnection(): void
     {
         [$client] = self::sockets();
         $stream = new Stream($client);
+        self::assertConnectionFails(static fn() => $stream->bound(0.0));
+        $stream->bound(null);
         $stream->close();
         self::assertConnectionFails(static fn() => $stream->bound(1.0));
         self::assertConnectionFails(static fn() => $stream->write('x'));

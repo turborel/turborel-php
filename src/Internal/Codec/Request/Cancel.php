@@ -7,7 +7,7 @@ namespace Turborel\Internal\Codec\Request;
 use Turborel\Internal\Codec\Frames;
 use Turborel\Internal\Codec\Kind;
 use Turborel\Internal\Codec\Reader;
-use Turborel\Internal\ValueFailure;
+use Turborel\Internal\Misuse;
 use Turborel\TurborelException;
 
 /**
@@ -29,12 +29,12 @@ final readonly class Cancel implements Request
     /**
      * Its frame.
      *
-     * @throws TurborelException SQLSTATE 22003 if the key is not 16 bytes
+     * @throws TurborelException SQLSTATE TB910 if the key is not 16 bytes
      */
     public function encode(): string
     {
         if (\strlen($this->key) !== Reader::KEY) {
-            throw ValueFailure::outOfRange('a cancel key is 16 bytes');
+            throw Misuse::of('a cancel key is 16 bytes');
         }
 
         return Frames::frame(Kind::CANCEL, $this->key);

@@ -135,7 +135,7 @@ final class TypeCodecTest extends CodecTestCase
      * Verifies: [PROTOCOL Data types] [PROTOCOL Frames]: a type a reader
      * cannot take fails the connection: a tag of no type, units neither 0
      * nor 1, an array's maximum cardinality out of 1 to 65535, a row of no
-     * field, a plug-in's type of three parameters, an interval field past
+     * field, a plug-in's type of three parameters or one of u32::MAX, an interval field past
      * SECOND, XML's modifiers out of range or SEQUENCE typed, a reference's
      * scope flag of 2, and types nested past sixteen levels.
      */
@@ -156,6 +156,7 @@ final class TypeCodecTest extends CodecTestCase
         yield 'tag 20, a value\'s alone' => ['14'];
         yield 'tag 28' => ['1C'];
         yield 'units of 2' => ['01 01 00 00 00 02'];
+        yield 'a plug-in parameter of u32::MAX' => ['04 01 00 00 00 50 01 00 00 00 FF FF FF FF'];
         yield 'a cardinality of 0' => ['10 00 00 00 00 0E'];
         yield 'a cardinality of 65536' => ['10 00 00 01 00 0E'];
         yield 'a row of no field' => ['11 00 00 00 00'];

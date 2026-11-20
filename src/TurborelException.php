@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Turborel;
 
 use Turborel\Internal\Codec\Cited;
+use Turborel\Internal\Codec\Diagnostics;
 use Turborel\Internal\Codec\Failure;
 
 /**
@@ -109,13 +110,19 @@ class TurborelException extends \RuntimeException
     /**
      * What the failure says beyond its codes and message, with `diagnostics`
      * granted: severity, detail, hint, context, schema, table, column,
-     * dataType and constraint, each that is known.
+     * dataType and constraint, each that is known. A failure the driver
+     * found says its severity alone, as turborel-client's do: FATAL if it
+     * ends the connection, else ERROR.
      *
      * @return array<string, string>
      */
     public function getDiagnostics(): array
     {
-        return $this->failure?->state->diagnostics->fields ?? [];
+        if ($this->failure === null) {
+            return ['severity' => $this->endsConnection() ? Diagnostics::FATAL : Diagnostics::ERROR];
+        }
+
+        return $this->failure->state->diagnostics->fields ?? [];
     }
 
     /**

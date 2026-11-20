@@ -29,6 +29,7 @@ use Turborel\Internal\Codec\Request\Request;
 use Turborel\Internal\Codec\Request\Reset;
 use Turborel\Internal\Codec\Request\Terminate;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Misuse;
 use Turborel\Internal\ValueFailure;
 use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
@@ -42,6 +43,7 @@ use Turborel\Value\LobKind;
 #[CoversNamespace('Turborel\Value')]
 #[CoversClass(ConnectionFailure::class)]
 #[CoversClass(ValueFailure::class)]
+#[CoversClass(Misuse::class)]
 #[CoversClass(TurborelException::class)]
 final class RequestsTest extends CodecTestCase
 {
@@ -133,8 +135,8 @@ final class RequestsTest extends CodecTestCase
      * Verifies: [PROTOCOL The tail] [DESIGN] D8: more than 32 attributes,
      * a name empty or past 64 bytes, or a value past 1024 are refused before
      * they are sent, with SQLSTATE 08006, as the server would fail the
-     * connection for them, which is kept; a cancel key not of 16 bytes with
-     * SQLSTATE 22003.
+     * connection for them, which is kept; a cancel key not of 16 bytes,
+     * which turborel-client's types rule out, with SQLSTATE TB910.
      *
      * @throws TurborelException never from 32 attributes
      */
@@ -146,7 +148,7 @@ final class RequestsTest extends CodecTestCase
             self::assertConnectionFails(static fn(): string => (new Query('X', false, $attributes))->encode());
         }
         self::assertSame(1 + 4 + 4 + 1 + 1 + 4 + 32 * 10, \strlen((new Query('', false, array_fill(0, 32, ['a', 'b'])))->encode()));
-        self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): string => (new Cancel('short'))->encode());
+        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): string => (new Cancel('short'))->encode());
     }
 
     /**

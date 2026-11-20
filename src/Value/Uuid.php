@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Value;
 
+use Turborel\Internal\Misuse;
 use Turborel\Internal\ValueFailure;
 use Turborel\TurborelException;
 
@@ -17,7 +18,7 @@ final readonly class Uuid implements SqlValue
     public const int OCTETS = 16;
 
     /** A UUID's text, in either case. */
-    private const string TEXT = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+    private const string TEXT = '/^[0-9a-f]{4}(?:-?[0-9a-f]{4}){6}-?[0-9a-f]{4}$/i';
 
     /** Where the text's hyphens go, counting hexadecimal digits. */
     private const array GROUPS = [8, 4, 4, 4, 12];
@@ -25,27 +26,32 @@ final readonly class Uuid implements SqlValue
     /**
      * The UUID of `$octets`.
      *
-     * @throws TurborelException SQLSTATE 22003 unless there are 16
+     * @throws TurborelException SQLSTATE TB910 unless there are 16
      */
     public function __construct(
         /** Its 16 octets. */
         public string $octets,
     ) {
         if (\strlen($octets) !== self::OCTETS) {
-            throw ValueFailure::outOfRange('a UUID is 16 octets, not ' . \strlen($octets));
+            throw Misuse::of('a UUID is 16 octets, not ' . \strlen($octets));
         }
     }
 
     /**
-     * The UUID whose text is `$text`, as `919108f7-52d1-4320-9bac-f847db4148a8`.
+     * The UUID whose text is `$text`, as turborel's CAST reads it: 32
+     * hexadecimal digits in either case, as
+     * `919108f7-52d1-4320-9bac-f847db4148a8`, a hyphen allowed after each
+     * group of four but the last, its white space trimmed, braced or not.
      *
-     * @throws TurborelException SQLSTATE 22003 if it is no UUID's text
+     * @throws TurborelException SQLSTATE 22018 if it is no UUID's text
      */
     public static function fromText(string $text): self
     {
-        $octets = preg_match(self::TEXT, $text) === 1 ? hex2bin(str_replace('-', '', $text)) : false;
+        $trimmed = preg_replace('/^\p{White_Space}+|\p{White_Space}+$/u', '', $text) ?? $text;
+        $bare = preg_match('/^\{(.*)\}$/s', $trimmed, $braced) === 1 ? $braced[1] : $trimmed;
+        $octets = preg_match(self::TEXT, $bare) === 1 ? hex2bin(str_replace('-', '', $bare)) : false;
         if ($octets === false) {
-            throw ValueFailure::outOfRange("'{$text}' is not a UUID");
+            throw ValueFailure::invalidForCast("'{$text}' is not a UUID's text");
         }
 
         return new self($octets);

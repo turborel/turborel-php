@@ -19,8 +19,9 @@ use Turborel\Value\Moment;
  * member's, an object's directory sorted by key and listing each member
  * once, as turborel checks a value it reads (its `binary::validate`).
  *
- * Damaged octets fail with SQLSTATE 22032, never a guess; the value codec
- * makes that a lost connection when the octets came from the server.
+ * Damaged octets fail with SQLSTATE TB916, and nodes nested past 128 with
+ * 0A000, never a guess; the value codec makes either a lost connection
+ * when the octets came from the server (RULES.md D8).
  *
  * @internal
  */
@@ -78,7 +79,7 @@ final class Decoder
      *
      * @return array{mixed, int}
      *
-     * @throws TurborelException SQLSTATE 22032 if it is damaged
+     * @throws TurborelException SQLSTATE TB916 if it is damaged
      */
     private function node(int $at, int $depth): array
     {
@@ -107,7 +108,7 @@ final class Decoder
     /**
      * The `$count` octets at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if they run past the document
+     * @throws TurborelException SQLSTATE TB916 if they run past the document
      */
     private function slice(int $at, int $count): string
     {
@@ -121,7 +122,7 @@ final class Decoder
     /**
      * The u32 at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if it runs past the document
+     * @throws TurborelException SQLSTATE TB916 if it runs past the document
      */
     private function word(int $at): int
     {
@@ -131,7 +132,7 @@ final class Decoder
     /**
      * The i64 at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if it runs past the document
+     * @throws TurborelException SQLSTATE TB916 if it runs past the document
      */
     private function long(int $at): int
     {
@@ -141,7 +142,7 @@ final class Decoder
     /**
      * The wide decimal whose body is at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if it runs past the document
+     * @throws TurborelException SQLSTATE TB916 if it runs past the document
      */
     private function wide(int $at): Exact
     {
@@ -153,7 +154,7 @@ final class Decoder
     /**
      * The approximate number whose bits are at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if it runs past the document
+     * @throws TurborelException SQLSTATE TB916 if it runs past the document
      */
     private function float(int $at): float
     {
@@ -167,7 +168,7 @@ final class Decoder
      *
      * @return array{string, int}
      *
-     * @throws TurborelException SQLSTATE 22032 if it is cut short or not UTF-8
+     * @throws TurborelException SQLSTATE TB916 if it is cut short or not UTF-8
      */
     private function string(int $at): array
     {
@@ -179,7 +180,7 @@ final class Decoder
     /**
      * The UTF-8 string whose length is at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if it is cut short or not UTF-8
+     * @throws TurborelException SQLSTATE TB916 if it is cut short or not UTF-8
      */
     private function text(int $at): string
     {
@@ -194,7 +195,7 @@ final class Decoder
     /**
      * The datetime whose body is at `$at`.
      *
-     * @throws TurborelException SQLSTATE 22032 if its moment or zoned flag is none
+     * @throws TurborelException SQLSTATE TB916 if its moment or zoned flag is none
      */
     private function datetime(int $at): Datetime
     {
@@ -216,7 +217,7 @@ final class Decoder
      * The decimal floating-point number whose body is at `$at`, rounded
      * half to even to 34 digits as turborel reads one.
      *
-     * @throws TurborelException SQLSTATE 22032 if it is out of range
+     * @throws TurborelException SQLSTATE TB916 if it is out of range
      */
     private function decFloat(int $at): DecFloat
     {
@@ -272,7 +273,7 @@ final class Decoder
      *
      * @return array{list<mixed>, int}
      *
-     * @throws TurborelException SQLSTATE 22032 if it is damaged
+     * @throws TurborelException SQLSTATE TB916 if it is damaged
      */
     private function array(int $at, int $depth): array
     {
@@ -299,7 +300,7 @@ final class Decoder
      *
      * @return array{int, int, int, int}
      *
-     * @throws TurborelException SQLSTATE 22032 if it runs past the document
+     * @throws TurborelException SQLSTATE TB916 if it runs past the document
      */
     private function container(int $at): array
     {
@@ -318,7 +319,7 @@ final class Decoder
      *
      * @return array{JsonObject, int}
      *
-     * @throws TurborelException SQLSTATE 22032 if it is damaged
+     * @throws TurborelException SQLSTATE TB916 if it is damaged
      */
     private function object(int $at, int $depth): array
     {
@@ -347,7 +348,7 @@ final class Decoder
      *
      * @param array<int, string> $starts each member's key, by where it begins
      *
-     * @throws TurborelException SQLSTATE 22032 if it does not
+     * @throws TurborelException SQLSTATE TB916 if it does not
      */
     private function directory(int $at, int $count, array $starts): void
     {

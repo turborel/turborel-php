@@ -89,9 +89,17 @@ final readonly class Tls
         return new self($this->authorities, $this->identity, $this->verification, $name);
     }
 
-    /** It, checking the server's certificate as `$verification` says. */
+    /**
+     * It, checking the server's certificate as `$verification` says.
+     *
+     * @throws TurborelException SQLSTATE 08006 if it checks the certificate, and trusts no authority
+     */
     public function verifying(Verification $verification): self
     {
+        if ($verification !== Verification::None && !$this->authorities->any()) {
+            throw ConnectionFailure::because('no certificate authority is trusted: name a file of them, or the platform\'s');
+        }
+
         return new self($this->authorities, $this->identity, $verification, $this->serverName);
     }
 }

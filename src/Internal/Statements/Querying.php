@@ -69,7 +69,7 @@ final readonly class Querying
         $this->results->rows(static function (array $rows) use ($sink, &$count): void {
             $count += \count($rows);
             $sink->rows($rows);
-        });
+        }, false);
 
         return new Streamed($count, null);
     }
@@ -86,7 +86,7 @@ final readonly class Querying
         $outcomes = [];
         while (true) {
             try {
-                $outcome = $this->outcome();
+                $outcome = $this->outcome(false);
             } catch (TurborelException $failure) {
                 if ($this->wire->lost !== null) {
                     throw $failure;
@@ -112,11 +112,12 @@ final readonly class Querying
     }
 
     /**
-     * One statement's outcome, the reply to a Query sent: a query's columns, rows and last Complete, or another's Complete.
+     * One statement's outcome, the reply to a Query sent: a query's columns, rows and last Complete, or another's Complete;
+     * its rows may end with Suspended, as a single statement's may, if `$suspendable`.
      *
      * @throws TurborelException the statement's failure, or SQLSTATE 08006 if another reply comes
      */
-    public function outcome(): Outcome
+    public function outcome(bool $suspendable = true): Outcome
     {
         $reply = $this->wire->receive();
         if ($reply instanceof Complete) {
@@ -125,7 +126,7 @@ final readonly class Querying
         if (!$reply instanceof Description) {
             throw $this->results->unexpected($reply, 'the server sent no result');
         }
-        [$rows, , $completion] = $this->results->rows();
+        [$rows, , $completion] = $this->results->rows(null, $suspendable);
 
         return new Outcome($reply->columns, $rows, $completion === null ? null : Completed::of($completion));
     }

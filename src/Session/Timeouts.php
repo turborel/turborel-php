@@ -23,9 +23,11 @@ final readonly class Timeouts
     public const float TERMINATE_WITHIN = 60.0;
 
     /**
-     * The limits `$connect` and `$read`, in seconds, none for no limit.
+     * The limits `$connect` and `$read`, in seconds, none for no limit. A
+     * limit of zero is refused where it is used, as turborel-client's is,
+     * with SQLSTATE 08006.
      *
-     * @throws TurborelException SQLSTATE TB910 if a limit is not positive
+     * @throws TurborelException SQLSTATE TB910 if a limit is negative, or no number
      */
     public function __construct(
         /** The limit to connect, begin TLS and for each step of the login, in seconds; none for no limit. */
@@ -34,8 +36,8 @@ final readonly class Timeouts
         public ?float $read = null,
     ) {
         foreach ([$connect, $read] as $limit) {
-            if ($limit !== null && !($limit > 0.0)) {
-                throw Misuse::of("a timeout of {$limit} seconds is not positive");
+            if ($limit !== null && !($limit >= 0.0)) {
+                throw Misuse::of('a timeout of ' . var_export($limit, true) . ' seconds is negative, or no number');
             }
         }
     }

@@ -44,6 +44,9 @@ final class ValueFailure
     /** SQLSTATE 0A000, feature not supported: beyond turborel's limits. */
     public const string UNSUPPORTED = '0A000';
 
+    /** SQLSTATE 22018, invalid character value for cast. */
+    public const string INVALID_FOR_CAST = '22018';
+
     /** SQLSTATE 2200N, invalid XML content. */
     public const string INVALID_XML_CONTENT = '2200N';
 
@@ -51,6 +54,12 @@ final class ValueFailure
     public static function outOfRange(string $message): TurborelException
     {
         return new TurborelException($message, self::OUT_OF_RANGE, self::DATA);
+    }
+
+    /** Text that writes no value of a type, as a CAST of it fails: `$message` says which. */
+    public static function invalidForCast(string $message): TurborelException
+    {
+        return new TurborelException($message, self::INVALID_FOR_CAST, self::DATA);
     }
 
     /** A string that is not UTF-8: `$message` says which. */

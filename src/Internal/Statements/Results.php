@@ -61,7 +61,8 @@ final readonly class Results
     /**
      * The rows the server sends until it says whether the cursor has more,
      * each batch given to `$batch` if one is, else kept: the rows kept, and
-     * whether it has more [PROTOCOL Execute 'E'] [PROTOCOL Fetch 'F'].
+     * whether it has more [PROTOCOL Execute 'E'] [PROTOCOL Fetch 'F']; a
+     * Query's rows, not `$suspendable`, end with Complete alone.
      *
      * @param (\Closure(list<list<mixed>>): void)|null $batch
      *
@@ -69,7 +70,7 @@ final readonly class Results
      *
      * @throws TurborelException the statement's failure, or SQLSTATE 08006 if the rows are broken off
      */
-    public function rows(?\Closure $batch = null): array
+    public function rows(?\Closure $batch = null, bool $suspendable = true): array
     {
         $rows = [];
         while (true) {
@@ -82,7 +83,7 @@ final readonly class Results
                 }
             } elseif ($reply instanceof Complete) {
                 return [$rows, false, $reply->completion];
-            } elseif ($reply instanceof Suspended) {
+            } elseif ($reply instanceof Suspended && $suspendable) {
                 return [$rows, true, null];
             } else {
                 throw $this->unexpected($reply, 'the server broke off its rows');

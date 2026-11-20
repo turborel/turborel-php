@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\Test;
 use Turborel\Internal\Misuse;
+use Turborel\Internal\Transport\Opener;
 use Turborel\Session\Capability;
 use Turborel\Session\Certificate;
 use Turborel\Session\Defaults;
@@ -57,7 +58,8 @@ final class ConfigurationTest extends CodecTestCase
     /**
      * Verifies: [CLIENT Timeouts]: a connection waits 30 seconds to connect
      * and log in, and on each read after with no limit, by default; a
-     * limit not positive is refused (SQLSTATE TB910).
+     * negative limit is refused (SQLSTATE TB910), and one of zero where it
+     * is used, as turborel-client refuses it (SQLSTATE 08006).
      *
      * @throws TurborelException never from the defaults
      */
@@ -66,8 +68,10 @@ final class ConfigurationTest extends CodecTestCase
     {
         $default = new Timeouts();
         self::assertSame([30.0, null, 60.0], [$default->connect, $default->read, Timeouts::TERMINATE_WITHIN]);
-        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Timeouts => new Timeouts(0.0));
-        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Timeouts => new Timeouts(null, -1.0));
+        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Timeouts => new Timeouts(-1.0));
+        self::assertFailure(Misuse::SQLSTATE, Misuse::SQLCODE, static fn(): Timeouts => new Timeouts(null, \NAN));
+        self::assertConnectionFails(static fn(): array => Opener::open(Target::tcp('127.0.0.1', 1), 0.0));
+        self::assertConnectionFails(static fn(): array => Opener::open(Target::local('/no/such/socket'), 0.0));
     }
 
     /**
@@ -89,8 +93,9 @@ final class ConfigurationTest extends CodecTestCase
     /**
      * Verifies: [CLIENT Connecting]: TLS trusts the authorities of a file
      * that holds one, made for the run, refusing a file not there or holding none, and no
-     * authority at all (SQLSTATE 08006); it presents a chain and key that
-     * are there; it checks the server's certificate as told.
+     * authority at all, nor a check of the certificate with none trusted
+     * (SQLSTATE 08006); it presents a chain and key that are there; it
+     * checks the server's certificate as told.
      *
      * @throws TurborelException never from the fixture's authorities
      */
@@ -99,12 +104,13 @@ final class ConfigurationTest extends CodecTestCase
     {
         $fixture = self::authority();
         foreach ([static fn(): Tls => Tls::trusting('/no/such/file'), static fn(): Tls => Tls::trusting(__FILE__), static fn(): Tls => Tls::roots(null, false),
-            static fn(): Tls => Tls::presenting($fixture, '/no/chain', '/no/key')] as $refused) {
+            static fn(): Tls => Tls::presenting($fixture, '/no/chain', '/no/key'), static fn(): Tls => Tls::unverified()->verifying(Verification::Full)] as $refused) {
             self::assertConnectionFails($refused);
         }
         $tls = Tls::trusting($fixture)->presentingAlso($fixture, $fixture)->verifying(Verification::Authority)->forServerName('db');
         self::assertSame([Verification::Authority, 'db', $fixture], [$tls->verification, $tls->serverName, $tls->identity?->chain]);
         self::assertSame($fixture, Tls::roots($fixture, false)->authorities->path);
+        self::assertSame(Verification::None, Tls::unverified()->verifying(Verification::None)->verification);
     }
 
     /**

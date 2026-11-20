@@ -30,6 +30,9 @@ final readonly class Canceller
         private string $key,
     ) {}
 
+    /** The most bytes read at a time while waiting for the server to close. */
+    private const int DRAINED = 65_536;
+
     /**
      * Cancels the statement running, giving up after `$within` seconds if the server does not answer.
      *
@@ -40,7 +43,10 @@ final readonly class Canceller
         [$stream] = Opener::open($this->target, $within);
         try {
             $stream->write((new Cancel($this->key))->encode());
-            $stream->rest(1);
+            // The server closes it, saying nothing; whatever it says is read and left until it closes.
+            while (\strlen($stream->rest(self::DRAINED)) === self::DRAINED) {
+                // Each piece dropped.
+            }
         } finally {
             $stream->close();
         }

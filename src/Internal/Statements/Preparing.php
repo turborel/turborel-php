@@ -155,7 +155,6 @@ final readonly class Preparing
     public function describeCursor(Statement $statement, int $cursor): array
     {
         $this->control->needs(Capability::DESCRIBE);
-        $this->numbered($cursor);
         $this->wire->send(new Describe($statement->number, $cursor));
         $reply = $this->wire->receive();
         if ($reply instanceof Description) {

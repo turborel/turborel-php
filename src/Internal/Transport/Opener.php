@@ -88,6 +88,9 @@ final class Opener
      */
     private static function tcp(Target $target, ?float $within, ?Context $context): mixed
     {
+        if ($within === 0.0) {
+            throw ConnectionFailure::because("cannot connect to {$target}: " . Stream::ZERO);
+        }
         $host = str_contains($target->host, ':') ? "[{$target->host}]" : $target->host;
         $options = ['socket' => ['tcp_nodelay' => true], 'ssl' => $context?->options() ?? []];
         [$resource, $warning] = Quietly::call(static fn(): mixed => stream_socket_client(
@@ -131,6 +134,9 @@ final class Opener
      */
     private static function local(string $path, ?float $within): Stream
     {
+        if ($within === 0.0) {
+            throw ConnectionFailure::because("cannot connect to {$path}: " . Stream::ZERO);
+        }
         if (\PHP_OS_FAMILY === 'Windows') {
             return Pipe::open($path, $within);
         }

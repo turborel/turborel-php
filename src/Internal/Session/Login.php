@@ -45,8 +45,9 @@ final class Login
      */
     private static function exchange(Wire $wire, string $user, Mechanism $mechanism, Offer $offer): Ready
     {
-        $initial = $mechanism->initial();
-        $wire->send(new Hello($user, $mechanism->name(), $initial, $offer->capabilities, $offer->attributes));
+        // The name first: SCRAM's initial message leaves the next connection to bind afresh.
+        [$name, $initial] = [$mechanism->name(), $mechanism->initial()];
+        $wire->send(new Hello($user, $name, $initial, $offer->capabilities, $offer->attributes));
         while (true) {
             $reply = $wire->receive();
             if ($reply instanceof Challenge) {

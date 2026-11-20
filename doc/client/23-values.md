@@ -45,7 +45,9 @@ a prepared statement ([Statements and Cursors](22-statements.md)).
 
 | SQLSTATE | SQLCODE | When |
 |---|---|---|
-| 22003 | -301 | A value, or one of its fields, out of its range: an exact number's units past an `i128`, a `DecFloat` past 34 digits, a UUID not of 16 octets |
+| 22003 | -301 | A value, or one of its fields, out of its range: an exact number's units past an `i128`, a `DecFloat` past 34 digits |
+| 22018 | -301 | A UUID's text that is not one: 32 hexadecimal digits, a hyphen allowed after each group of four, trimmed, braced or not |
+| TB910 | -910 | A UUID made of other than 16 octets |
 | 22021 | -301 | A string, or a character large object, that is not UTF-8 |
 | 22032 | -301 | JSON text that does not parse, or JSON with no text, a datetime's |
 | TB916 | -916 | A JSON stored form that is damaged, or of another version |

@@ -75,7 +75,7 @@ final readonly class Control
             throw $this->wire->failed(TurborelException::fromServer($reply->failure));
         }
         if (!$reply instanceof Complete) {
-            throw $this->wire->lose('the server sent no Complete');
+            throw $this->wire->lose('the server sent no completion');
         }
     }
 
@@ -87,21 +87,19 @@ final readonly class Control
     public function changeUser(string $user, Mechanism $mechanism): Ready
     {
         $this->needs(Capability::CHANGE_USER);
-        $initial = $mechanism->initial();
-        $this->wire->send(new ChangeUser($user, $mechanism->name(), $initial));
+        // The name first: SCRAM's initial message leaves the next connection to bind afresh.
+        [$name, $initial] = [$mechanism->name(), $mechanism->initial()];
+        $this->wire->send(new ChangeUser($user, $name, $initial));
         while (true) {
             $reply = $this->wire->receive();
             if ($reply instanceof Challenge) {
                 $this->wire->send(new Answer($mechanism->answer($reply->challenge)));
             } elseif ($reply instanceof Ready) {
+                // The session is renewed as by Reset: the wire noted no transaction active, and no warning.
                 $mechanism->ready();
-                // The session is renewed as by Reset, so no transaction is active.
-                $this->wire->active = false;
 
                 return $reply;
             } elseif ($reply instanceof Error) {
-                $mechanism->refused();
-
                 throw $this->wire->failed(TurborelException::fromServer($reply->failure));
             } else {
                 throw $this->wire->lose('the server sent no Ready');

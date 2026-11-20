@@ -26,7 +26,7 @@ final class ScramTest extends CodecTestCase
      * Verifies: [CLIENT Connecting] [PROTOCOL Mechanisms] [CLIENT The SCRAM key cache]:
      * the mechanism is SCRAM-SHA-256-PLUS bound by `tls-server-end-point`
      * over a certificate that defines one, says it could bind where one
-     * defines none, refuses a login whose server did not prove it knows the
+     * defines none, binds the next connection afresh, refuses a login whose server did not prove it knows the
      * verifier (SQLSTATE 08006), forgets the keys of a refused exchange,
      * and never shows its password.
      *
@@ -40,6 +40,7 @@ final class ScramTest extends CodecTestCase
         $scram->bind(new TlsChannel(null));
         self::assertStringStartsWith('y,,n=,r=', $scram->initial());
         self::assertSame(Scram::NAME, $scram->name());
+        self::assertStringStartsWith('n,,n=,r=', $scram->initial(), 'the next connection binds afresh');
         $cache = new KeyCache();
         $scram = (new Scram('pencil'))->withCache($cache);
         $nonce = substr($scram->initial(), \strlen('n,,n=,r='));

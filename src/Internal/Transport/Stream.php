@@ -24,6 +24,9 @@ final class Stream
     /** The bytes read at a time, so a body is held as it arrives, never as its length says. */
     private const int CHUNK = 65_536;
 
+    /** Why a limit of zero is refused, as Rust's standard library says it. */
+    public const string ZERO = 'cannot set a 0 duration timeout';
+
     /** The microseconds of a second. */
     private const int MICROS = 1_000_000;
 
@@ -50,6 +53,9 @@ final class Stream
             return;
         }
         $this->open('bound how long the connection waits');
+        if ($within === 0.0) {
+            throw ConnectionFailure::because('cannot bound how long the connection waits: ' . self::ZERO);
+        }
         $seconds = $within === null ? self::UNBOUNDED : (int) floor($within);
         $micros = $within === null ? 0 : (int) round(($within - floor($within)) * self::MICROS);
         [$set] = Quietly::call(fn(): bool => stream_set_timeout($this->resource, $seconds, $micros));

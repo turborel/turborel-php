@@ -184,7 +184,7 @@ final class Connection
     /**
      * Bounds each read and write from now on to `$within` seconds, none for no limit [CLIENT Timeouts].
      *
-     * @throws TurborelException SQLSTATE 08006 if the connection cannot be bounded, 22003 if the limit is not positive
+     * @throws TurborelException SQLSTATE 08006 if the connection cannot be bounded, or the limit is zero; TB910 if it is negative
      */
     public function setReadTimeout(?float $within): void
     {
@@ -573,11 +573,11 @@ final class Connection
         return $this->wire;
     }
 
-    /** Takes what Ready told: the authorization, the server, the key, the capabilities granted; compression begins after it. */
+    /** Takes what Ready told: the authorization, the server, the key, the capabilities granted, those the spec names in its order; compression begins after it. */
     private function ready(Ready $ready, int $compressFrom): void
     {
         [$this->authorization, $this->server, $this->key] = [$ready->authorization, $ready->server, $ready->key];
-        $this->wire->told->granted = $ready->capabilities;
+        $this->wire->told->granted = array_values(array_intersect(Capability::ALL, $ready->capabilities));
         $this->wire->compressFrom = $this->has(Capability::COMPRESSION) ? $compressFrom : null;
     }
 

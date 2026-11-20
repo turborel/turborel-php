@@ -466,6 +466,40 @@ turborel's owner decided (2026-11-19):
   PHP's openssl extension exports no keying material; the server takes
   `tls-server-end-point` over either version (D1).
 
+Where PHP cannot do what turborel-client does otherwise, the driver does
+what PHP can:
+
+- A named pipe is opened by PHP's `fopen`, which cannot ask
+  `SECURITY_IDENTIFICATION` as turborel-client's open does; the server
+  may act as the client on that pipe.
+
+Where turborel-client departs from the behaviour turborel's documents set
+out, or would leave a connection out of step, the driver follows the
+documents:
+
+- A value or condition a server sends that cannot be read, a JSON value
+  damaged or nested past 128, a truth value neither 0 nor 1, a length's
+  units neither characters nor octets, or a malformed condition in
+  Complete, loses the connection with SQLSTATE 08006, as a reply that
+  cannot be read does. turborel-client gives TB916 or 0A000 and keeps
+  the connection, the rest of the reply left unread, so the next request
+  would take it as its own.
+- Value tags 18 and 19, large objects in their stored layout, are
+  refused with 08006: no server sends them, though turborel-client's
+  reader takes them.
+- Attributes past the tail's bounds, more than 32, a name empty or past
+  64 bytes or a value past 1024, are refused before they are sent, with
+  08006, the connection kept; turborel-client sends them, and the server
+  then fails the connection.
+- Terminate waits at most 60 seconds for the server to close where the
+  read timeout sets none, on a stream given to `open` too, as
+  [CLIENT Connecting] says; turborel-client leaves such a stream as its
+  maker bounded it.
+- Each frame after Terminate is read, and an Error among them is its
+  failure, as [CLIENT Connecting] says of a commit that fails;
+  turborel-client reads the first frame's kind over every byte and fails
+  with 08006 when a Notice comes before the Error.
+
 ### This driver's own
 
 #### D9. Internals live under `Turborel\Internal`

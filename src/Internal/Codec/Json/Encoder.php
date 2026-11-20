@@ -50,7 +50,7 @@ final class Encoder
     /**
      * The document of `$value`.
      *
-     * @throws TurborelException SQLSTATE 22032 if it holds what JSON has no item of, or is too deep or too long
+     * @throws TurborelException SQLSTATE 22032 if it holds what JSON has no item of; 0A000 if it is too deep or too long
      */
     public static function encode(mixed $value): string
     {

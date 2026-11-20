@@ -15,6 +15,12 @@ use Turborel\TurborelException;
  */
 final readonly class Diagnostics
 {
+    /** The severity of a failure that leaves the connection, as turborel's ERROR. */
+    public const string ERROR = 'ERROR';
+
+    /** The severity of a failure that ends the connection, as turborel's FATAL. */
+    public const string FATAL = 'FATAL';
+
     /** The fields, by tag from SEVERITY, as `$fields` holds them. */
     private const array NAMES = ['severity', 'detail', 'hint', 'context', 'schema', 'table', 'column', 'dataType', 'constraint'];
 

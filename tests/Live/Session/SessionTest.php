@@ -135,7 +135,7 @@ final class SessionTest extends LiveTestCase
      * Verifies: [PROTOCOL Status 'T']: at login before Ready, and after a
      * Reset before its Complete, the server tells one of each name in the
      * page's table, in its order, then the session's own settings; after a
-     * statement, only what it changed. CATALOG is the database's, as a
+     * statement, the first after login too, only what it changed. CATALOG is the database's, as a
      * string, empty were it null.
      *
      * @throws TurborelException never from the statements
@@ -147,8 +147,9 @@ final class SessionTest extends LiveTestCase
         $connection = self::owner();
         self::assertSame($names, \array_slice(array_keys($connection->settings()), 0, 7));
         self::assertSame('TURBOREL', $connection->setting('CATALOG'));
-        $connection->query("SET SESSION.TIME_ZONE = '+02:00'");
         $connection->wire()->told->settings = [];
+        $connection->query('VALUES 1');
+        self::assertSame([], $connection->settings(), 'the first statement after login changed nothing');
         $connection->query("SET SESSION.TIME_ZONE = '+03:00'");
         self::assertSame(['SESSION.TIME_ZONE' => '+03:00'], $connection->settings());
         $connection->wire()->told->settings = [];

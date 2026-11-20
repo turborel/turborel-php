@@ -94,21 +94,20 @@ final class ScramExchange
         if ($this->bare === null || $this->expected !== null) {
             throw ScramFailure::because('the server\'s first message came out of turn');
         }
-        $fields = explode(',', $serverFirst);
+        $fields = explode(',', self::text($serverFirst));
+        [$both, $salt, $iterations] = [self::attribute($fields[0], 'r'), self::attribute($fields[1] ?? null, 's'), self::attribute($fields[2] ?? null, 'i')];
         if (\count($fields) > 3) {
             throw ScramFailure::because('the server\'s first message has more than it should');
         }
-        [$both, $salt, $iterations] = [self::attribute($fields[0], 'r'), self::attribute($fields[1] ?? null, 's'), self::attribute($fields[2] ?? null, 'i')];
         if (preg_match(self::NONCE, $both) !== 1 || \strlen($both) <= \strlen($this->nonce) || !str_starts_with($both, $this->nonce)) {
             throw ScramFailure::because('the server\'s nonce does not extend the client\'s');
         }
-        $decoded = base64_decode($salt, true);
-        if ($decoded === false) {
-            throw ScramFailure::because('the salt is not base 64');
-        }
-        if (preg_match('/^[1-9][0-9]{0,9}$/', $iterations) !== 1 || (int) $iterations > 0xFFFF_FFFF) {
+        $decoded = self::base64($salt) ?? throw ScramFailure::because('the salt is not base 64');
+        $digits = ltrim(preg_match('/^\+?[0-9]+$/', $iterations) === 1 ? ltrim($iterations, '+') : 'x', '0');
+        if ($digits === '' || \strlen($digits) > 10 || !ctype_digit($digits) || (int) $digits > 0xFFFF_FFFF) {
             throw ScramFailure::because('the iterations are no positive number');
         }
+        $iterations = $digits;
 
         return [$serverFirst, $both, $decoded, (int) $iterations];
     }
@@ -135,16 +134,13 @@ final class ScramExchange
      */
     public function verify(string $serverFinal): void
     {
-        if ($this->expected === null) {
+        if ($this->expected === null || $this->verified) {
             throw ScramFailure::because('the server\'s final message came out of turn');
         }
-        if (str_starts_with($serverFinal, 'e=')) {
+        if (str_starts_with(self::text($serverFinal), 'e=')) {
             throw ScramFailure::because('the server refused: ' . substr($serverFinal, 2));
         }
-        $signature = base64_decode(self::attribute($serverFinal, 'v'), true);
-        if ($signature === false) {
-            throw ScramFailure::because('the server\'s signature is not base 64');
-        }
+        $signature = self::base64(self::attribute($serverFinal, 'v')) ?? throw ScramFailure::because('the server\'s signature is not base 64');
         if (!hash_equals($this->expected, $signature)) {
             throw ScramFailure::because('the server did not prove it knows the user');
         }
@@ -165,6 +161,24 @@ final class ScramExchange
         }
 
         return $this->unoffered ? self::GS2_UNOFFERED : self::GS2_NONE;
+    }
+
+    /**
+     * `$message`, which must be UTF-8.
+     *
+     * @throws TurborelException SQLSTATE 28000 if it is not
+     */
+    private static function text(string $message): string
+    {
+        return preg_match('//u', $message) === 1 ? $message : throw ScramFailure::because('a message is not UTF-8');
+    }
+
+    /** The octets `$text` encodes in base 64; none unless it is their canonical encoding, padded, its spare bits zero [RFC 4648 §3.5]. */
+    private static function base64(string $text): ?string
+    {
+        $octets = base64_decode($text, true);
+
+        return $octets !== false && base64_encode($octets) === $text ? $octets : null;
     }
 
     /**

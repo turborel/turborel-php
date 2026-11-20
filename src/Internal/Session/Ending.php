@@ -38,16 +38,16 @@ final class Ending
         } finally {
             $wire->lostBy(ConnectionFailure::because('the session was terminated'));
         }
-        if (\strlen($rest) < FrameHeader::SIZE) {
-            return;
-        }
-        $header = FrameHeader::decode(substr($rest, 0, FrameHeader::SIZE), $wire->maxBody);
-        $reply = Replies::decode($header->kind, substr($rest, FrameHeader::SIZE, $header->length));
-        if ($reply instanceof Error) {
-            throw TurborelException::fromServer($reply->failure);
-        }
-        if (!$reply instanceof Notice && !$reply instanceof Status && !$reply instanceof Pong) {
-            throw ConnectionFailure::because('the server answered Terminate');
+        while (\strlen($rest) >= FrameHeader::SIZE) {
+            $header = FrameHeader::decode(substr($rest, 0, FrameHeader::SIZE), $wire->maxBody);
+            $reply = Replies::decode($header->kind, substr($rest, FrameHeader::SIZE, $header->length));
+            if ($reply instanceof Error) {
+                throw TurborelException::fromServer($reply->failure);
+            }
+            if (!$reply instanceof Notice && !$reply instanceof Status && !$reply instanceof Pong) {
+                throw ConnectionFailure::because('the server answered Terminate');
+            }
+            $rest = substr($rest, FrameHeader::SIZE + $header->length);
         }
     }
 }

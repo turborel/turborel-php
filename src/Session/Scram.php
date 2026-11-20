@@ -95,7 +95,8 @@ final class Scram implements Mechanism
     {
         $endPoint = \is_string($this->endPoint) ? $this->endPoint : null;
         $this->exchange = new ScramExchange($endPoint, $this->endPoint === false);
-        $this->used = null;
+        // The next connection binds afresh, as turborel-client's initial() leaves it.
+        [$this->endPoint, $this->used] = [null, null];
 
         return $this->exchange->first(base64_encode(random_bytes(self::NONCE_BYTES)));
     }

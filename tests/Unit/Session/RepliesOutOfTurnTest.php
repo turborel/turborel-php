@@ -13,6 +13,7 @@ use Turborel\Internal\Codec\Kind;
 use Turborel\Internal\Codec\Writer;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Ending;
+use Turborel\Internal\Session\Wire;
 use Turborel\Internal\Statements\Preparing;
 use Turborel\Internal\Statements\Querying;
 use Turborel\Session\Capability;
@@ -20,6 +21,7 @@ use Turborel\Session\Connection;
 use Turborel\Session\Target;
 use Turborel\Session\Trust;
 use Turborel\Statements\Completed;
+use Turborel\Statements\Sink;
 use Turborel\Statements\Statement;
 use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
@@ -130,6 +132,66 @@ final class RepliesOutOfTurnTest extends CodecTestCase
         $wire->told->granted = [Capability::MULTI_STATEMENT];
         fwrite($server, Frames::frame(Kind::PONG, ''));
         self::assertConnectionFails(static fn() => (new Querying($wire, false))->many('VALUES 1; VALUES 2'));
+    }
+
+    /**
+     * Verifies: [CLIENT Running statements] [CLIENT Controlling the session] [PROTOCOL Terminate 'X']:
+     * as turborel-client keeps them, a Query's rows streamed or of several
+     * statements broken off by Suspended lose the connection, a single
+     * statement's do not; an open cursor is described with `describe`
+     * alone; Ready to a change of user leaves no transaction active and no
+     * warning; the capabilities granted are those the spec names, in its
+     * order; an Error among the frames after Terminate is its failure.
+     *
+     * @throws TurborelException never from the replies in turn
+     */
+    #[Test]
+    public function turborelClientsStateIsKept(): void
+    {
+        $suspended = Frames::frame(Kind::DESCRIPTION, self::writer()->u32(0)->bytesWritten()) . Frames::frame(Kind::SUSPENDED, '');
+        $sink = new class implements Sink {
+            public function columns(array $columns): void {}
+
+            public function rows(array $rows): void {}
+        };
+        foreach ([static fn(Querying $q) => $q->into('X', $sink), static fn(Querying $q) => $q->many('X')] as $streamed) {
+            [$wire, $server] = self::pair();
+            $wire->told->granted = [Capability::MULTI_STATEMENT];
+            fwrite($server, $suspended);
+            self::assertConnectionFails(static fn() => $streamed(new Querying($wire, false)));
+            self::assertNotNull($wire->lost);
+        }
+        [$wire, $server] = self::pair();
+        fwrite($server, $suspended . Frames::frame(Kind::DESCRIPTION, self::writer()->u32(0)->bytesWritten()));
+        self::assertNull((new Querying($wire, false))->query('X')->completed);
+        $wire->told->granted = [Capability::DESCRIBE];
+        self::assertSame([], (new Preparing($wire, false))->describeCursor(new Statement(0, [], []), 3));
+        [$wire, $server] = self::pair();
+        [$wire->told->granted, $wire->active, $wire->warning] = [[Capability::CHANGE_USER], true, '01000'];
+        fwrite($server, self::ready(['describe', 'no-such', 'ping']));
+        $changed = (new Control($wire))->changeUser('bob', new Trust());
+        $state = static fn(Wire $w): array => [$w->active, $w->warning];
+        self::assertSame(['ANN', [false, null]], [$changed->authorization, $state($wire)]);
+        [$client, $server] = self::sockets();
+        fwrite($server, self::ready(['ping', 'no-such', 'describe']));
+        $connection = Connection::open($client, 'ann', new Trust());
+        self::assertSame([[Capability::DESCRIBE, Capability::PING], false], [$connection->granted(), $connection->has('no-such')]);
+        [$wire, $server] = self::pair();
+        fwrite($server, Frames::frame(Kind::NOTICE, self::writer()->string('01000')->string('n')->bytesWritten()) . self::error('40002', -911));
+        stream_socket_shutdown($server, \STREAM_SHUT_WR);
+        self::assertFailure('40002', -911, static fn() => Ending::terminate($wire, 1.0));
+    }
+
+    /**
+     * A Ready frame granting `$capabilities`.
+     *
+     * @param list<string> $capabilities
+     *
+     * @throws TurborelException never, the fields being in range
+     */
+    private static function ready(array $capabilities): string
+    {
+        return Frames::frame(Kind::READY, self::writer()->string('ANN')->raw(str_repeat('k', 16))->strings($capabilities)->string('s')->bytesWritten());
     }
 
     /**

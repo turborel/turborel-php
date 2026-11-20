@@ -13,6 +13,7 @@ use Turborel\Internal\Codec\Reply\Error;
 use Turborel\Internal\Codec\Reply\LobCreated;
 use Turborel\Internal\Codec\Reply\LobData;
 use Turborel\Internal\Codec\Reply\Notice;
+use Turborel\Internal\Codec\Reply\Ready;
 use Turborel\Internal\Codec\Reply\Reply;
 use Turborel\Internal\Codec\Reply\Rows;
 use Turborel\Internal\Codec\Reply\Status;
@@ -166,7 +167,7 @@ final class Wire
         }
     }
 
-    /** `$reply`, what it says of the session noted: whether a transaction is active, the last completion. */
+    /** `$reply`, what it says of the session noted: whether a transaction is active, the last completion and its warning. */
     private function noted(Reply $reply): Reply
     {
         if ($reply instanceof Complete) {
@@ -182,6 +183,9 @@ final class Wire
             || $reply instanceof LobData || $reply instanceof LobCreated) {
             // A locator is valid within a transaction alone, and a result's rows are read within one.
             $this->active = true;
+        } elseif ($reply instanceof Ready) {
+            // Ready ends a login or a ChangeUser, which renews the session as Reset does, its transaction rolled back.
+            [$this->active, $this->warning] = [false, null];
         }
 
         return $reply;

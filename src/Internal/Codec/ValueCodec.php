@@ -31,7 +31,9 @@ use Turborel\Value\Xml;
  *
  * A value's tag says how it is written, not its column's type, so a
  * CHARACTER VARYING value comes with tag 1; turborel's reader takes tags 5,
- * 7, 10 and 12 as their types' values too, and so does this one.
+ * 7, 10 and 12 as their types' values too, and so does this one. It takes
+ * tags 18 and 19 too, as large objects in their stored layout, which no
+ * server sends; this one refuses them.
  *
  * @internal
  */

@@ -21,7 +21,9 @@ rule of a standard it cites; `getPosition()`, where in the statement it
 is, in characters; `isTransactionActive()`, whether the session's
 transaction is active after it; and `getDiagnostics()`, granted
 `diagnostics`, its severity, detail, hint, context, and the schema,
-table, column, data type and constraint, each that is known.
+table, column, data type and constraint, each that is known. A failure
+the driver found gives its severity alone, `FATAL` if it ends the
+connection, else `ERROR`.
 
 ```php
 $connection->query('CREATE TABLE KEYS (K INTEGER PRIMARY KEY)');

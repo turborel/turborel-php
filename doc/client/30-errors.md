@@ -36,7 +36,9 @@ the statement it is, in characters; `isTransactionActive` whether the
 session's transaction is active after it, none of a failure the driver
 found; `getDiagnostics`, granted `diagnostics`, its fields by name:
 `severity`, `detail`, `hint`, `context`, `schema`, `table`, `column`,
-`dataType` and `constraint`, each that is known. A statement's
+`dataType` and `constraint`, each that is known. A failure the driver
+found gives its severity alone: `FATAL` if it ends the connection, else
+`ERROR`, as turborel-client's do. A statement's
 conditions, `takeConditions`, are `TurborelException`s too, of class 01
 or 02, never thrown.
 
