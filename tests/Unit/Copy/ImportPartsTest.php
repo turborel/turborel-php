@@ -12,6 +12,7 @@ use Turborel\Copy\Position;
 use Turborel\Copy\Rejected;
 use Turborel\Internal\Copy\Assigning;
 use Turborel\Internal\Copy\Names;
+use Turborel\Internal\Sql\Lexer;
 use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
 use Turborel\Type\CharacterType;
@@ -26,6 +27,7 @@ use Turborel\Value\LobKind;
  * strings it assigns before it sends them, and how it tells a failure.
  */
 #[CoversClass(Names::class)]
+#[CoversClass(Lexer::class)]
 #[CoversClass(Assigning::class)]
 #[CoversNamespace('Turborel\Copy')]
 #[CoversNamespace('Turborel\Internal\Codec')]

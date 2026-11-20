@@ -67,7 +67,7 @@ final class AgentTest extends LiveTestCase
         self::assertFailure('2E000', -919, static fn() => $agent->query("CONNECT TO 'live' AS 'not a name'"));
         self::assertFailure('28000', -104, static fn() => $agent->query("CONNECT TO 'live' AS 'three' USER 'select'"));
         self::assertFailure('08001', -919, static fn() => $agent->query("CONNECT TO 'nowhere'"));
-        self::assertFailure('2A000', -103, static fn() => $agent->query('DISCONNECT ?'));
+        self::assertFailure('2A000', -103, static fn() => $agent->query('DISCONNECT 5'));
         self::assertFailure('08003', -919, static fn() => $agent->query("DISCONNECT 'none'"));
         self::assertNull($agent->warning());
         self::assertNotNull($agent->canceller());

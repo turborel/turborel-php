@@ -4,54 +4,58 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Agent;
 
+use Turborel\Internal\Codec\Cited;
+use Turborel\Internal\Codec\Diagnostics;
+use Turborel\Internal\Codec\Failure;
+use Turborel\Internal\Codec\FailureState;
+use Turborel\Internal\Sql\Lexer;
 use Turborel\TurborelException;
 
 /**
- * The connection statements a client runs itself read from SQL text, as
- * turborel's `connection_statement` reads them (ISO/IEC 9075:1992 §15.1
- * to §15.3): a statement whose first words are CONNECT, DISCONNECT, or
- * SET CONNECTION; any other is none.
+ * The connection statements a client runs itself, read as turborel's
+ * `connection_statement` reads them (ISO/IEC 9075:1992 §15.1 to §15.3):
+ * the text split into tokens first, any text that is no tokens refused;
+ * then a statement whose first words are CONNECT, DISCONNECT or SET
+ * CONNECTION parsed, each name a `<simple value specification>`, a
+ * literal; any other statement is none.
  *
  * @internal
  */
 final class Parser
 {
-    /** A token: spaces and comments before it, then a word, a string, a delimited identifier, a number, a parameter, or a mark. */
-    private const string TOKEN = <<<'RE'
-        /\G(?:\s|--[^\n]*(?:\n|$)|\/\*.*?\*\/)*(?:(?<word>\p{L}[\p{L}\p{Nd}_]*)|'(?<string>(?:[^']|'')*)'|"(?<quoted>(?:[^"]|"")+)"|(?<number>\d+(?:\.\d*)?|\.\d+)|(?<parameter>\?|:\p{L}[\p{L}\p{Nd}_]*)|(?<mark>(?!--|\/\*)\S))/Asu
-        RE;
-
-    /** @var list<array{string, string}> the tokens, each its kind and text */
-    private array $tokens;
+    /** The character set a literal's introducer may name, SQL_TEXT. */
+    private const string SQL_TEXT = 'SQL_TEXT';
 
     /** The next token's place. */
     private int $at = 0;
 
+    /** A refusal of valid SQL not implemented, given once the statement is read whole, as turborel's refuse_later gives it. */
+    private ?TurborelException $refused = null;
+
     /**
-     * The parser of `$sql`'s tokens.
+     * The parser of `$tokens`.
      *
-     * @throws TurborelException SQLSTATE 2A000 if it cannot be split into tokens
+     * @param list<array{string, string, int, int}> $tokens
      */
-    private function __construct(string $sql)
-    {
-        $this->tokens = self::tokens($sql);
-    }
+    private function __construct(private readonly array $tokens, private readonly int $length) {}
 
     /**
      * The connection statement `$sql` is; none if it is another.
      *
-     * @throws TurborelException SQLSTATE 2A000 if it is one but does not parse
+     * @throws TurborelException SQLSTATE 2A000 if it is no tokens, or a connection statement that does not parse; 0A000 of valid SQL not implemented
      */
     public static function statement(string $sql): ?Statement
     {
-        $parser = new self($sql);
-        $first = $parser->tokens[0][1] ?? '';
-        $second = $parser->tokens[1][1] ?? '';
-        $kinds = [$parser->tokens[0][0] ?? '', $parser->tokens[1][0] ?? ''];
-        if ($kinds[0] !== 'word' || !(\in_array($first, ['CONNECT', 'DISCONNECT'], true) || ($first === 'SET' && $kinds[1] === 'word' && $second === 'CONNECTION'))) {
+        $tokens = Lexer::lex($sql);
+        $parser = new self($tokens, (int) preg_match_all('/./su', $sql));
+        $first = $tokens[0] ?? null;
+        $second = $tokens[1] ?? null;
+        $connect = $first !== null && $first[0] === Lexer::KEYWORD && \in_array($first[1], ['CONNECT', 'DISCONNECT'], true);
+        $set = $first !== null && $first[0] === Lexer::KEYWORD && $first[1] === 'SET' && $second !== null && $second[0] === Lexer::KEYWORD && $second[1] === 'CONNECTION';
+        if (!$connect && !$set) {
             return null;
         }
-        $statement = match ($first) {
+        $statement = match ($first[1] ?? '') {
             'CONNECT' => $parser->connect(),
             'DISCONNECT' => $parser->disconnect(),
             default => $parser->set(),
@@ -118,50 +122,93 @@ final class Parser
     }
 
     /**
-     * A `<simple value specification>`: a character string literal, its continuations joined; or a number or a parameter.
+     * A `<simple value specification>`: a literal, a character string literal's text kept; a variable specification is refused.
      *
-     * @throws TurborelException SQLSTATE 2A000 if none is next
+     * @throws TurborelException SQLSTATE 0A000 of a variable specification; 2A000 if no literal is next
      */
     private function value(): Value
     {
-        [$kind, $text] = $this->tokens[$this->at] ?? ['', ''];
-        if ($kind === 'string') {
-            ++$this->at;
-            while (($next = $this->tokens[$this->at] ?? null) !== null && $next[0] === 'string') {
-                $text .= $next[1];
-                ++$this->at;
-            }
-
-            return new Value($text, true);
+        if ($this->is(Lexer::DELIMITER, ':')) {
+            throw self::failure(-900, '0A000', 'DESIGN', '<variable specification> (embedded SQL) is valid SQL but is not implemented (RULES.md D18)', $this->here());
         }
-        if ($kind === 'number' || $kind === 'parameter') {
-            ++$this->at;
+        [$kind, $text] = $this->peek();
+        if (\in_array($text, ['DATE', 'TIME', 'TIMESTAMP'], true) && $kind === Lexer::KEYWORD && ($this->tokens[$this->at + 1][0] ?? '') === Lexer::STRING) {
+            $this->at += 2;
 
-            return new Value($text, false);
+            return new Value("{$text} literal", false);
+        }
+        if ([$kind, $text] === [Lexer::KEYWORD, 'INTERVAL']) {
+            return $this->interval();
+        }
+        if ($kind === Lexer::INTRODUCER && ($this->tokens[$this->at + 1][0] ?? '') === Lexer::STRING) {
+            $this->introducer($text);
+            [$kind, $text] = $this->peek();
+        }
+        $sign = $this->tokens[$this->at] ?? null;
+        $next = $this->tokens[$this->at + 1] ?? null;
+        $signed = $sign !== null && $sign[0] === Lexer::DELIMITER && \in_array($sign[1], ['+', '-'], true);
+        if ($signed && $next !== null && \in_array($next[0], [Lexer::EXACT, Lexer::APPROXIMATE], true) && $next[2] === $sign[3]) {
+            [$kind, $text] = [$next[0], $sign[1] . $next[1]];
+            ++$this->at;
+        }
+        $literal = \in_array($kind, [Lexer::STRING, Lexer::BINARY, Lexer::EXACT, Lexer::APPROXIMATE], true)
+            || ($kind === Lexer::KEYWORD && \in_array($text, ['TRUE', 'FALSE', 'UNKNOWN'], true));
+        if (!$literal) {
+            throw $this->syntax('expected a <literal>');
+        }
+        ++$this->at;
+
+        return new Value($text, $kind === Lexer::STRING);
+    }
+
+    /** An interval literal, INTERVAL [sign] 'string' and its qualifier's words, read as a value that is no character string. */
+    private function interval(): Value
+    {
+        ++$this->at;
+        if ($this->is(Lexer::DELIMITER, '+') || $this->is(Lexer::DELIMITER, '-')) {
+            ++$this->at;
+        }
+        while (($token = $this->tokens[$this->at] ?? null) !== null && ($token[0] !== Lexer::DELIMITER || \in_array($token[1], ['(', ')', ','], true))
+            && !\in_array($token[1], ['AS', 'USER'], true)) {
+            ++$this->at;
         }
 
-        throw self::syntax('a <simple value specification> is expected, found ' . ($text === '' ? 'the end' : $text));
+        return new Value('INTERVAL literal', false);
+    }
+
+    /** An introducer before a literal: of a character set but SQL_TEXT, its refusal kept for the statement's end. */
+    private function introducer(string $name): void
+    {
+        $parts = explode('.', $name);
+        $sqlText = end($parts) === self::SQL_TEXT && (\count($parts) === 1 || ($parts[\count($parts) - 2] ?? '') === 'INFORMATION_SCHEMA');
+        if (!$sqlText) {
+            $this->refused ??= self::failure(-900, '0A000', 'DESIGN', "the character set {$name} is valid SQL but is not implemented (RULES.md D18)", $this->here());
+        }
+        ++$this->at;
     }
 
     /**
-     * That the statement ends here, a semicolon past it taken.
+     * The statement's end, after one semicolon if written; then a refusal of valid SQL not implemented read in it, if any.
      *
-     * @throws TurborelException SQLSTATE 2A000 if more follows
+     * @throws TurborelException SQLSTATE 2A000 if more follows; 0A000 of valid SQL not implemented
      */
     private function end(): void
     {
-        if (($this->tokens[$this->at] ?? null) === ['mark', ';']) {
+        if ($this->is(Lexer::DELIMITER, ';')) {
             ++$this->at;
         }
         if (isset($this->tokens[$this->at])) {
-            throw self::syntax("the statement ends before {$this->tokens[$this->at][1]}");
+            throw $this->syntax('expected end of statement');
+        }
+        if ($this->refused !== null) {
+            throw $this->refused;
         }
     }
 
     /** Whether the key word `$word` is next, taken if it is. */
     private function accept(string $word): bool
     {
-        if (($this->tokens[$this->at] ?? null) === ['word', $word]) {
+        if ($this->is(Lexer::KEYWORD, $word)) {
             ++$this->at;
 
             return true;
@@ -178,47 +225,53 @@ final class Parser
     private function expect(string $word): void
     {
         if (!$this->accept($word)) {
-            throw self::syntax("expected {$word}, found " . ($this->tokens[$this->at][1] ?? 'the end'));
+            throw $this->syntax("expected {$word}");
         }
+    }
+
+    /** Whether the next token is of `$kind` and `$text`. */
+    private function is(string $kind, string $text): bool
+    {
+        return [$this->peek()[0], $this->peek()[1]] === [$kind, $text];
     }
 
     /**
-     * The tokens of `$sql`, each its kind and text: a word in upper case, a string's or a delimited identifier's body.
+     * The next token's kind and text; of the end, none and empty.
      *
-     * @return list<array{string, string}>
-     *
-     * @throws TurborelException SQLSTATE 2A000 if a part of it is no token
+     * @return array{string, string}
      */
-    private static function tokens(string $sql): array
+    private function peek(): array
     {
-        $tokens = [];
-        $at = 0;
-        while (preg_match(self::TOKEN, $sql, $match, \PREG_UNMATCHED_AS_NULL, $at) === 1) {
-            $at += \strlen($match[0]);
-            foreach (['word', 'string', 'quoted', 'number', 'parameter', 'mark'] as $kind) {
-                $text = $match[$kind] ?? null;
-                if ($text !== null) {
-                    $tokens[] = [$kind, match ($kind) {
-                        'word' => strtoupper($text),
-                        'string' => str_replace("''", "'", $text),
-                        'quoted' => str_replace('""', '"', $text),
-                        default => $text,
-                    }];
+        $token = $this->tokens[$this->at] ?? null;
 
-                    break;
-                }
-            }
-        }
-        if (trim((string) preg_replace('/--[^\n]*|\/\*.*?\*\//s', '', substr($sql, $at))) !== '') {
-            throw self::syntax('the statement holds no token at ' . substr($sql, $at, 10));
-        }
-
-        return $tokens;
+        return $token === null ? ['', ''] : [$token[0], $token[1]];
     }
 
-    /** A syntax error, `$message`, as turborel's parser gives one: SQLSTATE 2A000, SQLCODE -102. */
-    private static function syntax(string $message): TurborelException
+    /** Where the next token begins, in characters; past the last, the text's length. */
+    private function here(): int
     {
-        return new TurborelException($message, '2A000', -102);
+        return $this->tokens[$this->at][2] ?? $this->length;
+    }
+
+    /** A syntax error, `$message`, found the next token, as turborel's parser describes it: SQLCODE -102. */
+    private function syntax(string $message): TurborelException
+    {
+        [$kind, $text] = $this->peek();
+        $found = match ($kind) {
+            '' => 'end of statement',
+            Lexer::STRING => "'{$text}'",
+            Lexer::BINARY => "X'" . strtoupper(bin2hex($text)) . "'",
+            Lexer::INTRODUCER => "_{$text}",
+            Lexer::DELIMITER => "\"{$text}\"",
+            default => $text,
+        };
+
+        return self::failure(-102, '2A000', null, "{$message}, found {$found}", $this->here());
+    }
+
+    /** The failure of SQLCODE `$code` and SQLSTATE `$state`, citing `$rule`, `$message`, at character `$at`. */
+    private static function failure(int $code, string $state, ?string $rule, string $message, int $at): TurborelException
+    {
+        return TurborelException::fromServer(new Failure($code, $state, $message, new Cited($rule, $at), new FailureState(false, new Diagnostics(['severity' => Diagnostics::ERROR]))));
     }
 }

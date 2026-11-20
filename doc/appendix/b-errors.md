@@ -26,7 +26,8 @@ characters of the SQLSTATE are its class.
 | 0A001 | -900 | The SQL-agent's CONNECT or SET CONNECTION within an active transaction | no |
 | 28000 | -104 | The SQL-agent's CONNECT of a user that is no authorization identifier | no |
 | 25000 | -917 | The SQL-agent's DISCONNECT of a connection in a transaction | no |
-| 2A000 | -102, -103 | The SQL-agent's connection statement that does not parse, or names by no character string literal | no |
+| 2A000 | -101, -102, -103 | The SQL-agent's statement that is no tokens, as turborel's lexer refuses it (-101); its connection statement that does not parse, or names by no character string literal | no |
+| 0A000 | -900 | The SQL-agent's connection statement of a variable specification, or a literal of a character set other than SQL_TEXT | no |
 | 22000 | -301 | An import's input cannot be read, or does not fit the table: a record of too many or too few fields, a session with a transaction active, a table name that is not one | no |
 | 22001 | -301 | An import's string is longer than its column, found before it is sent | no |
 
