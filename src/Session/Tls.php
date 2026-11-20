@@ -67,6 +67,12 @@ final readonly class Tls
         return new self(Authorities::of($file, $platform));
     }
 
+    /** TLS that checks no certificate: it keeps a connection from being overheard, not from a server in the middle. */
+    public static function unverified(): self
+    {
+        return new self(Authorities::none(), null, Verification::None);
+    }
+
     /**
      * It, presenting the certificate chain of `$chain` and the key of `$key`.
      *

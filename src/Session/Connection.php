@@ -10,6 +10,7 @@ use Turborel\Internal\Codec\Reply\Ready;
 use Turborel\Internal\ConnectionFailure;
 use Turborel\Internal\Copy\Exporter;
 use Turborel\Internal\Lobs\Lobs;
+use Turborel\Internal\Session\Connecting;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Ending;
 use Turborel\Internal\Session\Login;
@@ -57,10 +58,16 @@ final class Connection
     /** Whether each statement is its own transaction. */
     private bool $autocommit = false;
 
-    /** The connection of `$wire` to `$target`, if it was made to one, waiting as `$timeouts` say, if it bounds its stream. */
-    private function __construct(Wire $wire, private readonly ?Target $target, private ?Timeouts $timeouts)
+    /**
+     * The connection of `$wire` to `$target`, if it was made to one, waiting as `$timeouts` say, if it bounds its stream,
+     * logged in as `$ready` tells, compressing frames from `$compressFrom` bytes where granted.
+     *
+     * @internal
+     */
+    public function __construct(Wire $wire, private readonly ?Target $target, private ?Timeouts $timeouts, Ready $ready, int $compressFrom)
     {
         $this->wire = $wire;
+        $this->ready($ready, $compressFrom);
     }
 
     /**
@@ -73,19 +80,11 @@ final class Connection
      */
     public static function connect(Target $target, string $user, Mechanism $mechanism, ?Timeouts $timeouts = null, ?Offer $offer = null): self
     {
-        if ($target->isPlainTcp() && $mechanism->secret()) {
-            throw ConnectionFailure::refused("{$mechanism->name()} is sent only over TLS, a Unix socket or a named pipe, never over plain TCP");
-        }
+        Connecting::inTheClear($target, $mechanism);
         $timeouts ??= new Timeouts();
         [$stream, $channel] = Opener::open($target, $timeouts->connect);
-        if ($channel !== null) {
-            $mechanism->bind($channel);
-        }
-        $connection = new self(new Wire($stream), $target, $timeouts);
-        $connection->opened($user, $mechanism, $offer ?? new Offer());
-        $stream->bound($timeouts->read);
 
-        return $connection;
+        return Connecting::over([$stream, $channel, $target], $user, $mechanism, $timeouts, $offer ?? new Offer());
     }
 
     /**
@@ -101,10 +100,10 @@ final class Connection
      */
     public static function open(mixed $stream, string $user, Mechanism $mechanism, ?Offer $offer = null): self
     {
-        $connection = new self(new Wire(new Stream($stream)), null, null);
-        $connection->opened($user, $mechanism, $offer ?? new Offer());
+        $offer ??= new Offer();
+        $wire = new Wire(new Stream($stream));
 
-        return $connection;
+        return new self($wire, null, null, Login::logIn($wire, $user, $mechanism, $offer), $offer->compressFrom);
     }
 
     /** The session's authorization identifier, as Ready told it: the user it logged in as. */
@@ -565,16 +564,6 @@ final class Connection
     public function wire(): Wire
     {
         return $this->wire;
-    }
-
-    /**
-     * Logs in as `$user`, by `$mechanism`, asking for what `$offer` asks, and takes what Ready told.
-     *
-     * @throws TurborelException the server's refusal, or SQLSTATE 08006 if it sends no Ready
-     */
-    private function opened(string $user, Mechanism $mechanism, Offer $offer): void
-    {
-        $this->ready(Login::logIn($this->wire, $user, $mechanism, $offer), $offer->compressFrom);
     }
 
     /** Takes what Ready told: the authorization, the server, the key, the capabilities granted; compression begins after it. */

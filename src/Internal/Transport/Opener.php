@@ -52,6 +52,34 @@ final class Opener
     }
 
     /**
+     * The stream to `$target`, TLS if its server takes it, else plain TCP, connecting again after a failed handshake; and of
+     * TLS its channel; and the target it reached, as turborel-client's `opened_preferring` [CLIENT TLS by mode].
+     *
+     * @return array{Stream, ?TlsChannel, Target}
+     *
+     * @throws TurborelException SQLSTATE 08006 if it cannot be reached
+     */
+    public static function preferring(Target $target, ?float $within): array
+    {
+        if ($target->tls === null) {
+            return [...self::open($target, $within), $target];
+        }
+        $context = new Context($target->tls, $target->host);
+        try {
+            $resource = self::tcp($target, $within, $context);
+            $stream = new Stream($resource);
+            $stream->bound($within);
+            try {
+                return [$stream, self::secured($resource, $stream, $context), $target];
+            } catch (TurborelException) {
+                return [...self::open($target->plain(), $within), $target->plain()];
+            }
+        } finally {
+            $context->release();
+        }
+    }
+
+    /**
      * The TCP connection to `$target`'s host and port.
      *
      * @return resource

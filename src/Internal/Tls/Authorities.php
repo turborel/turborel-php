@@ -33,6 +33,12 @@ final readonly class Authorities
         public ?string $platformDirectory,
     ) {}
 
+    /** No authority: of TLS that checks no certificate. */
+    public static function none(): self
+    {
+        return new self(null, null, null, null);
+    }
+
     /**
      * The authorities of the PEM file `$path`, if any, and the platform's if `$platform`.
      *

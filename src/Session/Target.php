@@ -61,6 +61,16 @@ final readonly class Target
         return new self($host, self::port($port), '', $tls);
     }
 
+    /**
+     * The same server over plain TCP, without TLS.
+     *
+     * @internal
+     */
+    public function plain(): self
+    {
+        return new self($this->host, $this->port, $this->path, null);
+    }
+
     /** Whether it is plain TCP, where a secret is never sent [CLIENT Connecting]. */
     public function isPlainTcp(): bool
     {
