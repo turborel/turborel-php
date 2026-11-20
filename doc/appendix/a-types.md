@@ -2,7 +2,8 @@
 
 [Contents](README.md)
 
-Every data type and value tag of turborel's native protocol, version 1,
-with the PHP type the driver gives a value of it and takes for a
-parameter: exact numbers as strings, never floats (RULES.md D4).
-Milestone M1 fills it with the codec.
+This appendix will map every data type and value tag of the native
+protocol, 1 to 27, to the PHP type the driver gives and takes,
+with the bounds of each, such as the exact number's units and scale, a
+timestamp's displacement and an interval's qualifier. It is filled at
+milestone M1.

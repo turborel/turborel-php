@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Turborel\Tools;
 
 /**
- * Every relative link of the documents resolves (RULES.md R-DOC-5): each
+ * Every relative link of the documents resolves (RULES.md R-DOC-7): each
  * `.md` file's links to other files of the repository name a file or a
  * directory that exists, since turborel.com's documentation site builds
  * its pages from `doc/` and rewrites those links.
@@ -28,7 +28,7 @@ final class LinkCheck
     private const string EXTENSION = 'md';
 
     /**
-     * What breaks R-DOC-5's links in the documents under `$root`.
+     * What breaks R-DOC-7's links in the documents under `$root`.
      *
      * @return list<string>
      */
@@ -36,26 +36,31 @@ final class LinkCheck
     {
         $findings = [];
         foreach (self::documents($root) as $document) {
-            $text = (string) preg_replace(self::FENCE, '', Sources::read($document));
-            preg_match_all(self::LINK, $text, $links);
+            preg_match_all(self::LINK, self::prose($document), $links);
             foreach ($links[1] as $link) {
                 $path = explode('#', $link, 2)[0];
                 if (preg_match(self::ELSEWHERE, $link) === 1 || file_exists(\dirname($document) . '/' . $path)) {
                     continue;
                 }
-                $findings[] = "{$document}: the link {$link} names no file (R-DOC-5)";
+                $findings[] = "{$document}: the link {$link} names no file (R-DOC-7)";
             }
         }
 
         return $findings;
     }
 
+    /** The text of the document `$document`, its fenced blocks of code left out. */
+    public static function prose(string $document): string
+    {
+        return (string) preg_replace(self::FENCE, '', Sources::read($document));
+    }
+
     /**
-     * The documents of the repository at `$root`, sorted.
+     * The documents under `$root`, sorted.
      *
      * @return list<string>
      */
-    private static function documents(string $root): array
+    public static function documents(string $root): array
     {
         $filter = static fn(\SplFileInfo $file): bool => !\in_array($file->getFilename(), self::SKIPPED, true);
         $iterator = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(

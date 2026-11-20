@@ -6,8 +6,8 @@ namespace Turborel\Tools;
 
 /**
  * The project's own checks, run by `composer check` and `composer coverage`
- * (RULES.md D5): sizes, comments, documentation, test citations, the
- * documents' links and the coverage floor.
+ * (RULES.md D4): sizes, comments, documentation, test citations, the
+ * documents' links, the manual's layout and the coverage floor.
  */
 final class Check
 {
@@ -68,6 +68,7 @@ final class Check
             ...DocCheck::check(Sources::under($root, [self::LIBRARY])),
             ...CitationCheck::check(Sources::under($root, [self::TESTS]), $rules),
             ...LinkCheck::check($root),
+            ...ManualCheck::check($root),
         ];
     }
 }

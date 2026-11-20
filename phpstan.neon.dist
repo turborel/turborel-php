@@ -1,7 +1,7 @@
 # Static analysis at PHPStan's highest level, with its strict rules, its
 # PHPUnit and deprecation rules, and TurborelException checked: a function
 # that can raise one says so in @throws, and its callers catch it or say so
-# too (RULES.md D7, R-LINT-1, R-ERR-1). The rule sets are included by path,
+# too (RULES.md D11, R-TYPE-2, R-TYPE-4). The rule sets are included by path,
 # so no Composer plugin is needed to install them.
 includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon

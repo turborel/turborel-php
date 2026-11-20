@@ -109,7 +109,7 @@ final class CitationCheck
                 ? $rules->defines($decision ?? $requirement ?? '')
                 : \in_array($heading, $headings, true);
             if (!$exists) {
-                $findings[] = "{$where} cites {$whole}, which does not exist (R-TRACE-1)";
+                $findings[] = "{$where} cites {$whole}, which does not exist (R-TRACE-2)";
             }
         }
 

@@ -2,7 +2,7 @@
 
 [Contents](README.md)
 
-This chapter will tell how CLOB and BLOB values too long to come whole
-are read through their locators, in chunks, and how a long value is
-written a piece at a time and sent as a parameter. Milestone M4 fills
-it.
+This chapter will tell how a program reads a CLOB or BLOB, whole or by
+its locator, a range or a stream at a time, and writes one a piece at a
+time to pass as a parameter; and how long a locator lasts, freed or
+held. It is filled at milestone M4.

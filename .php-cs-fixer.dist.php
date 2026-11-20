@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 // The code's format: PER Coding Style 3.0 and its risky rules, with strict
-// types declared in every file and strict comparisons (RULES.md D6,
-// R-STYLE-1). `composer format` applies it; `composer verify` checks it.
+// types declared in every file and strict comparisons (RULES.md D10,
+// R-STYLE-1, R-TYPE-1). `composer format` applies it; `composer verify` checks it.
 
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;

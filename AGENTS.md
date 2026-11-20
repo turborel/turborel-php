@@ -1,154 +1,154 @@
 # Guide for coding agents
 
-How to work on turborel-php as a coding agent, with any tool. If this
-file disagrees with [RULES.md](RULES.md) or
-[CONTRIBUTING.md](CONTRIBUTING.md), follow those.
+How to work on turborel-php as a coding agent, with any tool. If this file
+disagrees with [RULES.md](RULES.md) or [CONTRIBUTING.md](CONTRIBUTING.md),
+follow those.
 
-turborel-php is the PHP driver for turborel, a relational database
-system. It speaks turborel's native protocol, version 1, in plain PHP,
-and matches turborel-client, turborel's client library in Rust, feature
-for feature. See [README.md](README.md).
+turborel-php is the PHP driver for Turborel, a relational
+database system. It speaks Turborel's native protocol, version 1,
+itself, in plain PHP, with no C extension to build, and is built to do all turborel-client does. See
+[README.md](README.md).
 
 ## Before you change anything
 
-Read RULES.md §3 (code), §4 (tests), §7 (process) and the §1 decisions
-for your area. Read CONTRIBUTING.md for how a change is made and the
-extra checks for changes that touch the wire. Find the rows of
-CONFORMANCE.md your change implements, and the milestone in TODO.md they
-belong to.
+Read RULES.md §3 (code), §4 (tests), §6 (process) and the decisions for
+your area. Read CONTRIBUTING.md for how a change is made and the extra
+checks for changes that touch the protocol. Read the section of the
+protocol, or of the client documents, that your change implements, and
+the rows of CONFORMANCE.md it marks done.
 
 ## Build and check
 
-Every change must pass `composer verify` and `composer coverage` before
-it is handed back.
+Every change must pass `composer verify` and `composer coverage`
+before it is handed back.
 
 ```
-composer install                 # the development tools, as composer.lock pins them
+composer install                 # the development tools, at composer.lock's versions
+composer install-hooks           # run composer verify before each commit (once per clone)
 composer verify                  # every check a change must pass
 composer coverage                # the tests with coverage, and the floor (pcov or Xdebug)
-composer install-hooks           # run verify before every commit (once per clone)
-composer format                  # format the code to PER Coding Style 3.0
-composer format-check            # check the format alone
-composer check                   # sizes, comments, doc comments, test citations alone
-composer analyse                 # PHPStan alone
 composer test                    # the tests alone
+composer archive --format=zip    # the package, as Packagist would serve it
 ```
 
-`verify` stops at the first failure. CI runs it on Linux, macOS and
-Windows on PHP 8.3, 8.4 and 8.5, and coverage on Linux (D3, D9). The
-coverage floor is in `tools/CoverageFloor.php` and only rises (R-COV-2).
+`composer verify` stops at the first failure (RULES.md D4). CI runs it
+on Linux, macOS and Windows, on each supported runtime, and coverage on
+Linux. The coverage floor only rises (D7, R-COV-2).
 
-Neither pcov nor Xdebug ships with PHP. To run coverage without
-installing either, build pcov from PECL's source (`pecl download pcov`,
-then `phpize`, `./configure` and `make` in its own directory), write an
-ini file of `extension=/path/to/modules/pcov.so` and `pcov.enabled=1` in
-a directory of its own, and name that directory for the run alone:
-`PHP_INI_SCAN_DIR=":/that/directory" composer coverage`. The leading
-colon keeps PHP's own ini files.
-
-Project automation is PHP, in composer.json's scripts and `tools/`, never
-shell scripts (D5, R-TOOL-1).
+Project automation is the language's own tooling, never shell scripts
+(R-PROC-5).
 
 ## Where things are
 
 | Path | What |
 |---|---|
-| `src/Turborel.php` | the package's root: its version, the protocol's version |
-| `src/TurborelException.php` | the driver's one error type (R-ERR-1) |
-| `src/Internal/` | internals, `@internal` (D12): `Codec/`, and later `Transport/`, `Auth/`, `Tls/` |
-| `src/Internal/Codec/FrameHeader.php` | a frame's header, encoded and decoded |
+| `composer.json`, `composer.lock` | the package, its extensions and its development tools, pinned (D13, D14) |
+| `phpstan.neon.dist`, `.php-cs-fixer.dist.php`, `phpunit.xml.dist` | the type checker and linters, the formatter, the tests (D10 to D12) |
+| `src/Turborel.php` | the package's root: its version and the protocol's |
+| `src/TurborelException.php` | the driver's error (D2, R-ERR) |
+| `src/Internal/Codec/` | the `codec` layer, internal (D9) |
+| `src/Internal/Transport/`, `src/Internal/Auth/`, `src/Internal/Tls/` | the `transport`, `auth` and `tls` layers, internal, as they are built |
+| `src/Session/`, `src/Statements/`, `src/Lobs/`, `src/Copy/`, `src/Settings/`, `src/Pipeline/`, `src/Pool/` | the low-level client's public layers, as they are built, their internals under `src/Internal/` |
+| `src/Pdo/` | the `api` layer, the PDO-style API (D2), from M7 |
 | `tests/Unit/` | tests with no network, mirroring `src/` |
-| `tests/Live/` | tests against a server on loopback, from milestone M2 |
-| `tools/` | the project's own checks (D5), run by `tools/run.php` |
-| `doc/` | the manual: `user/`, `client/`, `appendix/` |
+| `tests/Live/` | live tests against a server on loopback, from M2 |
+| `tools/` | the checks tool (D4), run by `tools/run.php` |
+| `doc/` | the manual (R-DOC-7) |
 
-The protocol's spec is turborel's `doc/client/05-protocol.md`; the
-client's features are its `doc/client/02-library.md` and
-`02-library-connections.md`; the reference code is turborel's
-`client/src/` and `protocol/src/`. Where the spec and the code differ,
-the code is right.
+The protocol is Turborel's `doc/client/05-protocol.md`, the client's
+features `doc/client/02-library.md` and `02-library-connections.md`, and
+the reference code `protocol/src/` and `client/src/`, all in
+[turborel](https://github.com/turborel/turborel). Where the page and the
+code differ, the code is right; CONFORMANCE.md names each such place.
 
 ## Rules that are broken most often
 
-`verify` treats every warning as an error. RULES.md §3 and §4 have the
-full list.
+`composer verify` treats every warning as an error (R-LINT-1). RULES.md
+§3 and §4 have the full list.
 
-- Every file declares `strict_types=1` (R-STYLE-2).
-- Every failure is a `TurborelException` with its SQLSTATE and SQLCODE;
-  no other exception leaves the library, and no `exit`, `die`,
-  `trigger_error` or `@` (R-ERR-1, R-ERR-3). A function that can raise
-  one says `@throws TurborelException`; PHPStan checks it (D7).
-- A failure the driver finds takes turborel-client's codes, as 08006 and
-  -919 for a connection lost (R-ERR-2).
-- No secret in a message or a trace: `#[\SensitiveParameter]` (R-ERR-4).
-- No integer past 64 bits, and no exact number, as a float (R-NUM-1).
+- Every failure is the driver's error, with its SQLCODE and SQLSTATE
+  (R-ERR-1, R-ERR-2). No error of the language or a library beneath it
+  reaches a program; catch it, and give the driver's, keeping the cause
+  (R-ERR-3).
+- No printing, and no ending the process, in library code (R-STYLE-3,
+  R-ERR-1).
+- Check every length or count a server sends against its bound before
+  reading or reserving for it (R-SAFE-1).
+- No secret in a log, a failure's message or an object's display form
+  (R-SAFE-4).
+- Integers of the protocol are read and written at their width,
+  little-endian; exact numbers never pass through a float (R-NUM).
 - Keep functions to 50 lines of code and 5 parameters, and files to 600
   lines (R-SIZE).
-- No magic numbers or strings; the protocol's tags are named typed
-  constants, defined once (R-CONST).
-- No printing, superglobals or ini changes in the library (R-STYLE-4).
-- Every class and every public and protected member has a PHPDoc comment
-  (R-DOC-1). Comments say why (R-DOC-2). No TODO, FIXME or XXX comments
-  or commented-out code (R-DOC-3).
-- No `@phpstan-ignore` without the identifier and the reason, and no
-  baseline (R-DEV-1).
-- No new dependency without a decision in RULES.md (R-DEP-1).
-- Internals go under `Turborel\Internal`, marked `@internal` (D12).
+- No magic numbers or strings: protocol tags, kinds, capability, status
+  and mechanism names are named constants, defined once (R-CONST).
+- Every public item has a doc comment (R-DOC-1). Comments say why
+  (R-DOC-2). No `TODO` comments or commented-out code (R-DOC-5).
+- A silenced warning names its rule and says why (R-LINT-3).
+- No dependency without a decision in RULES.md (R-DEP-1).
+- Code of one platform is chosen by the platform and refused elsewhere
+  with the driver's error (R-PLAT-2).
+- Every file declares `strict_types=1` (R-TYPE-1).
+- A function that can raise `TurborelException` says so with `@throws`,
+  which PHPStan checks (R-TYPE-4).
+- No superglobal, ini change, `@` operator, `eval` or `extract` in library
+  code (R-TYPE-5).
+- An integer past PHP_INT_MAX, an `i128` or a large `u64`, is the string
+  of its digits, never a float (R-TYPE-6).
+- `#[\SensitiveParameter]` on every parameter that holds a secret
+  (R-SAFE-4).
+- Internals go under `Turborel\Internal`, marked `@internal` (D9).
 
 ## Tests
 
-Every test has a doc comment with a paragraph `Verifies:` beginning with
-a citation `composer check` accepts (R-TRACE-1): `[PROTOCOL <heading>]`
-of 05-protocol.md, `[CLIENT <heading>]` of the client manual,
-`[DESIGN] D<n>` or `[TOOL] R-…`. The headings accepted are in
-`tools/Headings.php`; a heading turborel's manual changes is changed
-there.
+Every test cites what it verifies, by its doc comment, beginning `Verifies:`, beginning with a
+tag (R-TRACE-1, D6):
 
-Tests are deterministic, with no clock, randomness or network beyond
-loopback, and run in their written order (R-TEST-3). Each test class
-names what it covers with `#[CoversClass]` (D8). Fixtures shared by test
-classes go in `tests/Support` (R-TEST-6). A fixed defect gets a
-regression test (R-TEST-4).
+- `[PROTOCOL <heading>]`, a section of 05-protocol.md, as
+  `[PROTOCOL Frames]`;
+- `[CLIENT <heading>]`, a section of 02-library.md or
+  02-library-connections.md, as `[CLIENT Pipelines]`;
+- `[DESIGN] D<n>`, a decision of RULES.md;
+- `[TOOL] R-<id>`, a rule the checks tool holds.
+
+The checks tool refuses a heading, decision or rule that is not there
+(R-TRACE-2). Tests are deterministic, with no clock, randomness or
+network beyond loopback (R-TEST-5). A shared fixture is written once
+(R-TEST-7). A fixed defect gets a regression test that fails without the
+fix (R-TEST-6). A live test runs its own server on its own port and data
+directory, and stops it.
 
 ## Citing the spec
 
-Check every citation against the spec's text before writing it. Never
-cite from memory. Cite a section by its heading exactly, as
-`[PROTOCOL Hello 'H']`. Code never cites TODO.md, and `composer check`
-refuses it in a comment (R-DOC-3).
+Check every citation against the document before writing it, by its
+heading as printed. Never cite from memory. Code never cites TODO.md.
 
 ## Documents
 
 A finished feature updates these in the same change:
 
-- RULES.md, if it made a decision, including the row in §1's table
-- CONFORMANCE.md, for each row implemented or changed (R-TRACE-2)
-- TODO.md, which only holds open work
-- [doc/](doc/README.md), for anything a program sees (R-DOC-5)
-- README.md, if what the driver does in short has changed
+- RULES.md, if it made a decision, including the row in §1's table;
+- CONFORMANCE.md, each row it implements (R-TRACE-4), marked done only
+  where its code exists and its tests pass;
+- TODO.md, which only holds open work;
+- [doc/](doc/README.md), for anything a program sees (R-DOC-7), every
+  example run: each page keeps its `# Title` and its
+  `[Contents](README.md)` line, links within `doc/` are relative `.md`
+  links, and a link out of `doc/` is a full URL, as the docs site reads
+  `doc/` alone;
+- README.md, if what the driver is or needs changes.
 
-The manual is three volumes, laid out as turborel's, since
-turborel.com's documentation site reads `doc/` and builds its pages from
-it: Volume I, the User's Guide (`doc/user/`), a chapter a subject;
-Volume II, the API Reference (`doc/client/`), a page a main class; and
-the Appendices (`doc/appendix/`): types, errors, settings, versions.
-Each page begins with its `# Title`, then a line `[Contents](README.md)`;
-links between pages are relative `.md` links, and every one must
-resolve. A chapter not yet written says what it will cover and the
-milestone that fills it; the milestone replaces that with the chapter.
-
-For the manual, check each claim against the code, and run every example
-and paste its real output. No benchmarks or timings go in the documents.
+No document gives timings or speedups; numbers go in a commit message.
 
 ## Commits
 
 - Commit only when the maintainer asks, and never push without approval.
 - Follow CONTRIBUTING.md's form, with one logical change per commit.
 - Add no AI or agent attribution to a commit, a pull request, a file or
-  the package. That means no `Co-Authored-By` for an agent, no
-  "Generated with" and no `Signed-off-by`.
+  the package's metadata. That means no `Co-Authored-By` for an agent,
+  no "Generated with" and no `Signed-off-by`.
 - Stage with an explicit path list, `git add -- <path> ...`. Never use
   `git add -A` or `git add .` on the whole tree.
-- Never stage `LICENSE` or scratch files.
-- What one platform alone has, as a named pipe on Windows, can't be
-  verified locally on another. Say so when handing it back.
+- Never stage scratch files, or a live test's data directory.
+- Code compiled for one platform only can't be verified locally on
+  another. Say so when handing it back (R-PLAT-4).

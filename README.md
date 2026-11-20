@@ -5,43 +5,48 @@
     </picture>
 </p>
 
-> turborel-php is in alpha, meaning, version 0.0.0. Anything may change
-> from one build to the next, its classes, methods and behaviour alike.
-> Its version is the turborel release it is made for, and the alpha
-> speaks turborel's native protocol version 1. See
-> [VERSIONING.md](VERSIONING.md).
+> turborel-php is in alpha, meaning, version 0.0.0. Its version is the
+> number of the Turborel release it is made for, and the alpha is made
+> for Turborel 0.0.0, which speaks protocol version 1. Anything may
+> change from one build to the next, API and behaviour alike. See
+> [VERSIONING.md](VERSIONING.md). The latest Turborel alpha is built for
+> Linux, macOS and Windows as the pre-release
+> [nightly](https://github.com/turborel/turborel/releases/tag/nightly),
+> and as the image `ghcr.io/turborel/turborel:nightly`.
 
 turborel-php is the PHP driver for
-[turborel](https://github.com/turborel/turborel), a relational database
-system. It connects a PHP program to a turborel server, `turboreld`, over
-turborel's native protocol, written in plain PHP: no C extension to
-build, nothing to install but the package. Its standard interface is an
-API in PDO's shape, written in PHP; a real PDO driver would need a C
-extension, so this one is userland, and is not `\PDO` itself
-([RULES.md](RULES.md) D2).
+[Turborel](https://github.com/turborel/turborel), a relational database
+system. It connects a PHP program to a Turborel server,
+`turboreld`, over Turborel's [native
+protocol](https://github.com/turborel/turborel/blob/main/doc/client/05-protocol.md),
+version 1, which it speaks itself, in plain PHP, with no C extension to build.
 
-It is being built to do all that turborel's own client library,
-turborel-client, does: TLS and SCRAM-SHA-256-PLUS, prepared statements
-and cursors, large objects, copy, import and export, settings from a URI
-or a service file, several servers, pipelines and pools.
-[CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by row, and
-[TODO.md](TODO.md) what comes next. Today it holds the repository's kit
-and the protocol's frame header.
+Its standard interface is an API in PDO's shape, written in PHP; a real PDO driver would need a C extension, so it is not `\PDO` itself. Beneath it is a low-level
+client built to do all that Turborel's own client library,
+turborel-client, does: TCP, Unix sockets and Windows named pipes, TLS,
+SCRAM-SHA-256 and SCRAM-SHA-256-PLUS, prepared statements and cursors,
+large objects, bulk copy, import and export, settings from a URI, the
+environment and service and password files, several servers, pipelines
+and pools.
 
-## What it needs
+The driver is built in milestones, M0 to M8, and does not connect to a
+server yet. [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by
+row, and [TODO.md](TODO.md) what is open.
 
-- PHP 8.3 or later, 64-bit, on Linux, macOS or Windows.
-- The extension openssl, for TLS.
-- The extensions zlib, for compressed frames, and bcmath, for arithmetic
-  on exact numbers, if wanted. Exact numbers come as strings either way.
+## Requirements
 
-It depends on no other package.
+- PHP 8.3 or later, 64-bit, on Linux, macOS or Windows ([RULES.md](RULES.md) D3).
+- The extension openssl, for TLS; zlib, for compressed frames, and bcmath, for arithmetic on exact numbers, where wanted.
+- PHP 8.3, 8.4 and 8.5 are tested; no package beyond PHP's own extensions.
+- A Turborel server of the same release, which speaks protocol version 1
+  ([running the server](https://github.com/turborel/turborel/blob/main/doc/operator/02-turboreld.md)).
 
 ## Installing
 
-The package is not yet published on Packagist; it will be, as
-`turborel/turborel`, once every turborel driver is done. Until then,
-build it from source:
+No package is published yet. The driver's package, `turborel/turborel`, goes to
+Packagist only once every Turborel driver is done, with the others
+([VERSIONING.md](VERSIONING.md#publishing)). Until then, build the
+driver from source:
 
 ```
 git clone https://github.com/turborel/turborel-php.git
@@ -50,14 +55,21 @@ composer install
 composer verify
 ```
 
-and require it in a program's composer.json from that checkout, as a
-Composer `path` repository. The User's Guide's chapter
-[Installing](doc/user/01-installing.md) will say more as the driver grows.
+A program takes the checkout in as a Composer `path` repository, then
+requires the package:
+
+```json
+{
+    "repositories": [{"type": "path", "url": "../turborel-php"}],
+    "require": {"turborel/turborel": "0.0.0"}
+}
+```
 
 ## A first query
 
-This is what the PDO-style API will be once milestone M7 builds it; it
-is not there yet, and its names may change until then.
+This is what the standard API will be once milestone M7 builds it and
+M8's audit checks it. None of it runs yet, and its names may change
+until then.
 
 ```php
 use Turborel\Pdo\Connection;
@@ -75,19 +87,32 @@ try {
 }
 ```
 
-## Documents
+## The manual
 
-- [doc/](doc/README.md): the manual: a User's Guide, an API Reference
-  and Appendices, written as each milestone lands, and published on
-  turborel.com's documentation site.
-- [VERSIONING.md](VERSIONING.md): the version, and how a release is
-  published.
-- [CONFORMANCE.md](CONFORMANCE.md): what is implemented of the protocol
-  and of turborel-client.
-- [RULES.md](RULES.md): how the driver is designed, written and verified.
-- [TODO.md](TODO.md): open work.
-- [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md):
-  contributing, and reporting an issue or a vulnerability.
-- [LICENSE](LICENSE) and [TRADEMARK.md](TRADEMARK.md): the code is
-  under the BSD-2-Clause Plus Patent License; the name Turborel and its
-  logos are not, and TRADEMARK.md says how they may be used.
+[doc/](doc/README.md) is the manual: a User's Guide, an API Reference
+and Appendices, published on turborel.com's documentation site too. Each
+chapter is written as the milestone that fills it lands. The SQL a
+program sends, and the server, are described in Turborel's own manual,
+[The Turborel Documentation Set](https://github.com/turborel/turborel/blob/main/doc/README.md).
+[VERSIONING.md](VERSIONING.md) tells how the driver's releases are
+numbered and published.
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before making a change: how a
+change is made, its commit message, pull requests and issues. Every
+change passes `composer verify`. [RULES.md](RULES.md) says how the
+driver is designed, written and verified,
+[CONFORMANCE.md](CONFORMANCE.md) is the parity matrix every Turborel
+driver keeps, and [TODO.md](TODO.md) lists open work.
+
+## Security
+
+Report a vulnerability privately, never in a public issue, as
+[SECURITY.md](SECURITY.md) says.
+
+## License and trademark
+
+The code is under the BSD-2-Clause Plus Patent License, in
+[LICENSE](LICENSE). The name Turborel and its logos are not:
+[TRADEMARK.md](TRADEMARK.md) says how they may be used.

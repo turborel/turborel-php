@@ -2,7 +2,8 @@
 
 [Contents](README.md)
 
-SQLSTATE classes, and the failures the driver itself raises, each with
-its SQLCODE, all as `Turborel\TurborelException`. Today the driver
-raises one: SQLSTATE 08006, SQLCODE -919, a connection lost, for a frame
-it cannot read. Milestones M1 to M6 add each failure as it is built.
+This appendix will list the SQLSTATE classes the driver reports, those
+it raises itself, such as SQLCODE -919 and SQLSTATE 08006 for a
+connection whose messages cannot be read, and those the server sends,
+how each reaches a program as the driver's error, and which end the
+connection. It is filled at milestone M3.

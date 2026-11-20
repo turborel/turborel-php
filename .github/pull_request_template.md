@@ -36,10 +36,10 @@ same release sees; "none" if nothing changes. -->
 <!-- If the change claims any: what was measured, before and after, with
 the numbers. Otherwise "none claimed". -->
 
-## Checklist (RULES.md §7)
+## Checklist (RULES.md §6)
 
 - [ ] One logical change per commit, each passing `composer verify`
 - [ ] The spec's sections cited in the code (R-DOC-4) and in the tests (`Verifies:`, R-TRACE-1)
-- [ ] Normal and robustness tests (R-TEST-2), a failing-first test for a fix (R-TEST-4)
+- [ ] Normal and robustness tests (R-TEST-2), a failing-first test for a fix (R-TEST-6)
 - [ ] Every failure a `TurborelException` with its SQLSTATE and SQLCODE (R-ERR-1); no new dependency without a decision (R-DEP-1)
 - [ ] CONFORMANCE.md, RULES.md, TODO.md and doc/ updated where they change

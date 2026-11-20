@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Turborel\Tools;
 
 /**
- * Comments that say why, not what is left to do (RULES.md R-DOC-3): no
+ * Comments that say why, not what is left to do (RULES.md R-DOC-5): no
  * comment marks work left undone, and none cites the open-work file.
  */
 final class CommentCheck
@@ -20,7 +20,7 @@ final class CommentCheck
     private const array COMMENTS = [\T_COMMENT, \T_DOC_COMMENT];
 
     /**
-     * What breaks R-DOC-3 in `$files`.
+     * What breaks R-DOC-5 in `$files`.
      *
      * @param list<string> $files
      *
@@ -35,9 +35,9 @@ final class CommentCheck
                     continue;
                 }
                 if (str_contains($token->text, self::OPEN_WORK)) {
-                    $findings[] = "{$file}:{$token->line}: code never cites " . self::OPEN_WORK . ' (R-DOC-3)';
+                    $findings[] = "{$file}:{$token->line}: code never cites " . self::OPEN_WORK . ' (R-DOC-5)';
                 } elseif (preg_match(self::LEFT_UNDONE, $token->text) === 1) {
-                    $findings[] = "{$file}:{$token->line}: open work goes in " . self::OPEN_WORK . ', not a comment (R-DOC-3)';
+                    $findings[] = "{$file}:{$token->line}: open work goes in " . self::OPEN_WORK . ', not a comment (R-DOC-5)';
                 }
             }
         }

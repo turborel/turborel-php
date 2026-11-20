@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The tests (RULES.md D8, R-TEST). Every warning, notice, deprecation and
+  The tests (RULES.md D12, R-TEST). Every warning, notice, deprecation and
   risky test fails the run; each test names the classes it covers, and code
   it runs outside them is a risky test. Coverage is of src/ alone (R-COV).
 -->

@@ -1,5 +1,5 @@
 # Every check a change must pass (RULES.md R-PROC-1), on each platform the
-# driver claims to run on and each PHP it supports (D3, R-PLAT-1), plus the
+# driver claims to run on and each PHP it supports (D3, D4, R-PLAT-1), plus the
 # coverage floor (R-COV). Actions are pinned by full commit SHA, the release
 # in a comment, so a moved tag cannot change what runs.
 name: verify

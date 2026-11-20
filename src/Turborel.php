@@ -9,7 +9,7 @@ namespace Turborel;
  *
  * The driver speaks turborel's native protocol, version 1, in plain PHP,
  * with no C extension and no dependency at run time beyond ext-openssl
- * (RULES.md D1, D4). Its standard interface is a PDO-style API of its own
+ * (RULES.md D1, D15). Its standard interface is a PDO-style API of its own
  * (RULES.md D2). Every failure it raises is a {@see TurborelException},
  * carrying the SQLSTATE and SQLCODE of what went wrong.
  *

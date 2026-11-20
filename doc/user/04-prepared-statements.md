@@ -2,7 +2,8 @@
 
 [Contents](README.md)
 
-This chapter will tell how a statement is prepared once with `?`
-parameters and executed many times, how its parameters' and columns'
-types are described, and how cursors read its rows in parts. Milestone
-M3 fills it.
+This chapter will tell how a program prepares a statement once, its
+parameters written `?`, and runs it many times; how it reads a query's
+rows through a cursor, in parts, several cursors of one statement at
+once; and how it describes a statement and lets it go. It is filled at
+milestone M3.
