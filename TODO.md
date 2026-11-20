@@ -9,13 +9,4 @@ in [RULES.md](RULES.md).
 
 Code never cites this file (R-DOC-5).
 
-[M8 Parity audit](#m8-parity-audit)
-
----
-
-## M8 Parity audit
-
-- Every row of CONFORMANCE.md checked against turborel-client and the
-  spec, the coverage floor held (RULES.md D7), and this file empty.
-- Once Turborel keeps a file of sample frames beside the spec, every
-  frame of it decoded, at a pinned commit.
+Nothing is open: every milestone, M0 to M8, is done.

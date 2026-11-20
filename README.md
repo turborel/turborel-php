@@ -29,9 +29,9 @@ large objects, bulk copy, import and export, settings from a URI, the
 environment and service and password files, several servers, pipelines
 and pools.
 
-The driver is built in milestones, M0 to M8; every one but M8's parity
-audit is done. [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row
-by row, and [TODO.md](TODO.md) what is open.
+The driver was built in milestones, M0 to M8, and every one is done.
+[CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by row, and
+[TODO.md](TODO.md) what is open.
 
 ## Requirements
 
@@ -67,8 +67,7 @@ requires the package:
 
 ## A first query
 
-The standard API, as milestone M7 built it; its names may change until
-M8's audit checks it.
+The standard API:
 
 ```php
 use Turborel\Pdo\Connection;
@@ -91,8 +90,7 @@ try {
 
 [doc/](doc/README.md) is the manual: a User's Guide, an API Reference
 and Appendices, published at
-https://turborel.com/docs/drivers/php/. Each
-chapter is written as the milestone that fills it lands. The SQL a
+https://turborel.com/docs/drivers/php/. The SQL a
 program sends, and the server, are described in Turborel's own manual,
 [The Turborel Documentation Set](https://github.com/turborel/turborel/blob/main/doc/README.md).
 [VERSIONING.md](VERSIONING.md) tells how the driver's releases are

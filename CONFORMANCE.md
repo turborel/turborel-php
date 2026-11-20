@@ -26,7 +26,8 @@ own API gives it and its own tests show it.
 An ID never changes and is never reused; a row added later takes the
 next free number of its section. Rows of a data type, a value or a tail
 field are numbered by their tag, and the other rows of those sections
-from 100. [TODO.md](TODO.md) gives the milestone of each row.
+from 100. [TODO.md](TODO.md) holds the work still open, of rows not yet
+done.
 
 Contents: [Where the page and the code differ](#where-the-page-and-the-code-differ) ·
 [Summary](#summary) · [The protocol](#the-protocol) ·
