@@ -8,6 +8,8 @@ use PHPUnit\Framework\TestCase;
 use Turborel\Internal\Codec\Reader;
 use Turborel\Internal\Codec\Writer;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Session\Wire;
+use Turborel\Internal\Transport\Stream;
 use Turborel\TurborelException;
 
 /**
@@ -63,5 +65,39 @@ abstract class CodecTestCase extends TestCase
             return;
         }
         self::fail("expected SQLSTATE {$sqlState}");
+    }
+
+    /**
+     * Both ends of a socket pair: the client's, and the one the test writes as the server.
+     *
+     * @return array{resource, resource}
+     */
+    final protected static function sockets(): array
+    {
+        // Windows' PHP pairs sockets of the Internet family alone.
+        $windows = \PHP_OS_FAMILY === 'Windows';
+        $pair = stream_socket_pair($windows ? \STREAM_PF_INET : \STREAM_PF_UNIX, \STREAM_SOCK_STREAM, $windows ? \STREAM_IPPROTO_TCP : \STREAM_IPPROTO_IP);
+        self::assertIsArray($pair);
+        [$client, $server] = [$pair[0] ?? null, $pair[1] ?? null];
+        self::assertIsResource($client);
+        self::assertIsResource($server);
+
+        return [$client, $server];
+    }
+
+    /**
+     * A wire over the client's end of a socket pair, each wait a second at most, and the server's end.
+     *
+     * @return array{Wire, resource}
+     *
+     * @throws TurborelException never, the stream being open
+     */
+    final protected static function pair(): array
+    {
+        [$client, $server] = self::sockets();
+        $stream = new Stream($client);
+        $stream->bound(1.0);
+
+        return [new Wire($stream), $server];
     }
 }

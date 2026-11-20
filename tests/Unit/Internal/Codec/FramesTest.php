@@ -12,6 +12,7 @@ use Turborel\Internal\Codec\Frames;
 use Turborel\Internal\Codec\Kind;
 use Turborel\Internal\Codec\Request\Query;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Quietly;
 use Turborel\Internal\ValueFailure;
 use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
@@ -22,6 +23,7 @@ use Turborel\TurborelException;
  */
 #[CoversNamespace('Turborel\Internal\Codec')]
 #[CoversClass(ConnectionFailure::class)]
+#[CoversClass(Quietly::class)]
 #[CoversClass(ValueFailure::class)]
 #[CoversClass(TurborelException::class)]
 final class FramesTest extends CodecTestCase

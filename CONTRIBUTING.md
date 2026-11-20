@@ -45,6 +45,7 @@ composer install-hooks           # run composer verify before each commit (once 
 composer verify                  # every check a change must pass
 composer coverage                # the tests with coverage, and the floor (pcov or Xdebug)
 composer test                    # the tests alone
+TURBOREL_TEST_SERVER=/path/to/turboreld composer test   # with the live tests, against a server they start
 composer archive --format=zip    # the package, as Packagist would serve it
 ```
 

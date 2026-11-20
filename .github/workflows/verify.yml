@@ -40,6 +40,15 @@ jobs:
           tools: composer:v2
       - name: Install the development tools
         run: composer install --no-interaction --no-progress
+      # The live tests run against the nightly image on Linux, with the host's
+      # network so the server sees its clients as local (tests/Server). The
+      # image is Linux's alone, and macOS and Windows runners have no
+      # turboreld, so there they are skipped and the unit tests run alone.
+      - name: The server for the live tests
+        if: runner.os == 'Linux'
+        run: |
+          docker pull ghcr.io/turborel/turborel:nightly
+          echo "TURBOREL_TEST_SERVER=docker:ghcr.io/turborel/turborel:nightly" >> "$GITHUB_ENV"
       - name: Every check
         timeout-minutes: 30
         run: composer verify
@@ -57,5 +66,9 @@ jobs:
           tools: composer:v2
       - name: Install the development tools
         run: composer install --no-interaction --no-progress
+      - name: The server for the live tests
+        run: |
+          docker pull ghcr.io/turborel/turborel:nightly
+          echo "TURBOREL_TEST_SERVER=docker:ghcr.io/turborel/turborel:nightly" >> "$GITHUB_ENV"
       - name: Coverage and its floor
         run: composer coverage

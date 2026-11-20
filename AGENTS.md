@@ -28,6 +28,7 @@ composer install-hooks           # run composer verify before each commit (once 
 composer verify                  # every check a change must pass
 composer coverage                # the tests with coverage, and the floor (pcov or Xdebug)
 composer test                    # the tests alone
+TURBOREL_TEST_SERVER=/path/to/turboreld composer test   # with the live tests, against a server they start
 composer archive --format=zip    # the package, as Packagist would serve it
 ```
 
@@ -51,7 +52,8 @@ Project automation is the language's own tooling, never shell scripts
 | `src/Session/`, `src/Statements/`, `src/Lobs/`, `src/Copy/`, `src/Settings/`, `src/Pipeline/`, `src/Pool/` | the low-level client's public layers, as they are built, their internals under `src/Internal/` |
 | `src/Pdo/` | the `api` layer, the PDO-style API (D2), from M7 |
 | `tests/Unit/` | tests with no network, mirroring `src/` |
-| `tests/Live/` | live tests against a server on loopback, from M2 |
+| `tests/Live/` | live tests against a server on loopback, run where TURBOREL_TEST_SERVER names one |
+| `tests/Server/` | the live tests' server set-up: turboreld, or the nightly image, with certificates made for the run (R-TEST-8) |
 | `tools/` | the checks tool (D4), run by `tools/run.php` |
 | `doc/` | the manual (R-DOC-7) |
 

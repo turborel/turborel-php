@@ -74,7 +74,8 @@ Each is told in full in [§7](#7-the-decisions).
 | `src/Session/`, `src/Statements/`, `src/Lobs/`, `src/Copy/`, `src/Settings/`, `src/Pipeline/`, `src/Pool/` | the low-level client's public layers, as they are built, their internals under `src/Internal/` |
 | `src/Pdo/` | the `api` layer, the PDO-style API (D2), from M7 |
 | `tests/Unit/` | tests with no network, mirroring `src/` |
-| `tests/Live/` | live tests against a server on loopback, from M2 |
+| `tests/Live/` | live tests against a server on loopback, run where TURBOREL_TEST_SERVER names one |
+| `tests/Server/` | the live tests' server set-up: turboreld, or the nightly image, with certificates made for the run (R-TEST-8) |
 | `tools/` | the checks tool (D4), run by `tools/run.php` |
 | `doc/` | the manual (R-DOC-7) |
 
@@ -420,7 +421,8 @@ The floor is 98 % of lines, kept in `tools/CoverageFloor.php`, which
 reads PHPUnit's Clover report. Branches are not measured: pcov, which CI
 uses, counts lines alone. The floor is below 100 % for the code of one
 platform, a Unix socket or a named pipe, which coverage on Linux does
-not run.
+not run. Coverage counts the live tests, so `composer coverage` runs
+where TURBOREL_TEST_SERVER names a server, as CI's does.
 
 Neither pcov nor Xdebug ships with PHP. pcov builds from PECL's source
 with `phpize`, and is loaded for one run by an ini file in a directory

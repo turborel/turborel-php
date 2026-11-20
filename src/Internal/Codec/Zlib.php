@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Turborel\Internal\Codec;
 
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Quietly;
 use Turborel\TurborelException;
 
 /**
@@ -77,7 +78,7 @@ final class Zlib
     }
 
     /**
-     * What `$call` gives, any warning PHP raises in it made a failure rather than printed (RULES.md R-ERR-3).
+     * What `$call` gives, false if PHP warned in it, the warning taken rather than printed (RULES.md R-ERR-3).
      *
      * @template T
      *
@@ -87,18 +88,8 @@ final class Zlib
      */
     private function quietly(\Closure $call): mixed
     {
-        $warned = false;
-        set_error_handler(static function () use (&$warned): bool {
-            $warned = true;
+        [$result, $warned] = Quietly::call($call);
 
-            return true;
-        });
-        try {
-            $result = $call();
-        } finally {
-            restore_error_handler();
-        }
-
-        return $warned ? false : $result;
+        return $warned === null ? $result : false;
     }
 }
