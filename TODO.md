@@ -9,4 +9,11 @@ in [RULES.md](RULES.md).
 
 Code never cites this file (R-DOC-5).
 
-Nothing is open: every milestone, M0 to M8, is done.
+[M8 Parity audit](#m8-parity-audit)
+
+---
+
+## M8 Parity audit
+
+- Once Turborel keeps a file of sample frames beside the spec, every
+  frame of it decoded, at a pinned commit.
