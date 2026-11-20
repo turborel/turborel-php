@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace Turborel\Session;
 
-use Turborel\Internal\Codec\Reply\Challenge;
-use Turborel\Internal\Codec\Reply\Error;
 use Turborel\Internal\Codec\Reply\Ready;
-use Turborel\Internal\Codec\Reply\Reply;
-use Turborel\Internal\Codec\Request\Answer;
-use Turborel\Internal\Codec\Request\Hello;
-use Turborel\Internal\Codec\Request\Request;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Lobs\Lobs;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Ending;
+use Turborel\Internal\Session\Login;
 use Turborel\Internal\Session\Wire;
 use Turborel\Internal\Statements\Preparing;
 use Turborel\Internal\Statements\Querying;
 use Turborel\Internal\Transport\Opener;
 use Turborel\Internal\Transport\Stream;
+use Turborel\Lobs\LobWriter;
 use Turborel\Statements\Batch;
 use Turborel\Statements\Completed;
 use Turborel\Statements\Outcome;
@@ -28,6 +25,9 @@ use Turborel\Statements\Statement;
 use Turborel\Statements\Streamed;
 use Turborel\TurborelException;
 use Turborel\Type\Column;
+use Turborel\Value\Lob;
+use Turborel\Value\LobKind;
+use Turborel\Value\LobLocator;
 
 /**
  * A connection to a server, and its session, as turborel-client's
@@ -329,6 +329,59 @@ final class Connection
     }
 
     /**
+     * At most a chunk of 256 KiB of `$lob` from octet `$from`, at most `$count`; of a character large object, its whole
+     * characters if `$characters`. Fewer than asked only at its end, or a chunk's [CLIENT Large objects].
+     *
+     * @throws TurborelException SQLSTATE 0F001 if its locator is no longer valid, or SQLSTATE 08006
+     */
+    public function readLob(Lob|LobLocator $lob, int|string $from, int|string $count, bool $characters = false): string
+    {
+        return (new Lobs($this->wire))->read($lob, $from, $count, $characters);
+    }
+
+    /**
+     * `$lob`'s octets as a stream PHP's file functions read, as `stream_get_contents`, a chunk read at a time.
+     *
+     * @return resource
+     *
+     * @throws TurborelException SQLSTATE 08006 if PHP cannot open the stream; a failing read throws from the function that read
+     */
+    public function lobReader(Lob|LobLocator $lob): mixed
+    {
+        return (new Lobs($this->wire))->reader($lob);
+    }
+
+    /**
+     * A new large object of `$kind`, written a piece at a time, whose `finish` gives it to pass as a parameter.
+     *
+     * @throws TurborelException the server's, or SQLSTATE 08006
+     */
+    public function createLob(LobKind $kind): LobWriter
+    {
+        return (new Lobs($this->wire))->create($kind);
+    }
+
+    /**
+     * Ends `$lob`'s locator before its transaction does.
+     *
+     * @throws TurborelException SQLSTATE 0F001 if it is not valid, or SQLSTATE 08006
+     */
+    public function freeLob(LobLocator $lob): Completed
+    {
+        return (new Lobs($this->wire))->free($lob);
+    }
+
+    /**
+     * Keeps `$lob`'s locator past its transaction's commit, until it is freed or a rollback ends it.
+     *
+     * @throws TurborelException SQLSTATE 0F001 if it is not valid, or SQLSTATE 08006
+     */
+    public function holdLob(LobLocator $lob): Completed
+    {
+        return (new Lobs($this->wire))->hold($lob);
+    }
+
+    /**
      * Hands each notice the server sends from now on to `$handler`, as it comes; none, they are kept [CLIENT What the server tells].
      *
      * @param (\Closure(Notice): void)|null $handler
@@ -452,30 +505,6 @@ final class Connection
     }
 
     /**
-     * Sends `$request` as it is.
-     *
-     * @throws TurborelException SQLSTATE 08006 if the connection is lost
-     *
-     * @internal
-     */
-    public function send(Request $request): void
-    {
-        $this->wire->send($request);
-    }
-
-    /**
-     * The next reply but a Notice or a Status.
-     *
-     * @throws TurborelException SQLSTATE 08006 if the connection is lost
-     *
-     * @internal
-     */
-    public function receive(): Reply
-    {
-        return $this->wire->receive();
-    }
-
-    /**
      * The connection's frames, for the layers over it.
      *
      * @internal
@@ -486,49 +515,13 @@ final class Connection
     }
 
     /**
-     * Logs in, closing the stream if the login fails.
+     * Logs in as `$user`, by `$mechanism`, asking for what `$offer` asks, and takes what Ready told.
      *
      * @throws TurborelException the server's refusal, or SQLSTATE 08006 if it sends no Ready
      */
     private function opened(string $user, Mechanism $mechanism, Offer $offer): void
     {
-        try {
-            $this->logIn($user, $mechanism, $offer);
-        } catch (TurborelException $refused) {
-            $this->wire->stream->close();
-
-            throw $refused;
-        }
-    }
-
-    /**
-     * Logs in as `$user`, by `$mechanism`, asking for what `$offer` asks:
-     * Hello, then each Challenge answered, until Ready or an Error
-     * [PROTOCOL Opening a connection].
-     *
-     * @throws TurborelException the server's refusal, or SQLSTATE 08006 if it sends no Ready
-     */
-    private function logIn(string $user, Mechanism $mechanism, Offer $offer): void
-    {
-        $initial = $mechanism->initial();
-        $this->wire->send(new Hello($user, $mechanism->name(), $initial, $offer->capabilities, $offer->attributes));
-        while (true) {
-            $reply = $this->wire->receive();
-            if ($reply instanceof Challenge) {
-                $this->wire->send(new Answer($mechanism->answer($reply->challenge)));
-            } elseif ($reply instanceof Ready) {
-                $mechanism->ready();
-                $this->ready($reply, $offer->compressFrom);
-
-                return;
-            } elseif ($reply instanceof Error) {
-                $mechanism->refused();
-
-                throw TurborelException::fromServer($reply->failure);
-            } else {
-                throw $this->wire->lose('the server sent no Ready');
-            }
-        }
+        $this->ready(Login::logIn($this->wire, $user, $mechanism, $offer), $offer->compressFrom);
     }
 
     /** Takes what Ready told: the authorization, the server, the key, the capabilities granted; compression begins after it. */

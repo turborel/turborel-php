@@ -163,8 +163,8 @@ final class PreparingTest extends LiveTestCase
         $all = $connection->prepare('SELECT ID FROM P_GONE');
         $connection->openCursor($all, [], 1);
         self::assertFailure('24000', -501, static fn() => $connection->deallocate($all));
-        $connection->send(new Prepare($all->number, 'VALUES 1'));
-        $replaced = $connection->receive();
+        $connection->wire()->send(new Prepare($all->number, 'VALUES 1'));
+        $replaced = $connection->wire()->receive();
         self::assertInstanceOf(Error::class, $replaced);
         self::assertSame('24000', $replaced->failure->sqlstate);
         $connection->close($all);

@@ -173,8 +173,8 @@ From `doc/client/05-protocol.md`, The Native Protocol.
 | P-VAL-27 | 27 UUID: bytes, a count of 16, then the 16 octets (gap G1) | `[PROTOCOL Values]` | done |
 | P-VAL-100 | A value's tag says how it is written, not its column's type: CHARACTER VARYING written with tag 1 | `[PROTOCOL Values]` | done |
 | P-VAL-101 | A datetime's zoned byte 1 for a type WITH TIME ZONE; without a zone, the displacement the value is shown in | `[PROTOCOL Values]` | done |
-| P-VAL-102 | A large object of at most SERVER.LOB_INLINE_BYTES, 64 KiB by default, read whole; a longer one by its locator, valid until its transaction ends | `[PROTOCOL Values]` | not yet |
-| P-VAL-103 | A large object sent whole, or as a locator the client made with Lob requests | `[PROTOCOL Values]` | not yet |
+| P-VAL-102 | A large object of at most SERVER.LOB_INLINE_BYTES, 64 KiB by default, read whole; a longer one by its locator, valid until its transaction ends | `[PROTOCOL Values]` | done |
+| P-VAL-103 | A large object sent whole, or as a locator the client made with Lob requests | `[PROTOCOL Values]` | done |
 
 ### JSON values
 
@@ -355,11 +355,11 @@ they follow Turborel's RULES.md D89 and `src/json/binary.rs`.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| P-LOB-1 | 0 read: locator, from, count, characters flag; answered by a Lob reply of data | `[PROTOCOL Lob 'L']` | not yet |
-| P-LOB-2 | 1 create: kind; answered by a Lob reply of a locator | `[PROTOCOL Lob 'L']` | not yet |
-| P-LOB-3 | 2 append: locator, bytes, a character free to split between appends; answered by Complete | `[PROTOCOL Lob 'L']` | not yet |
-| P-LOB-4 | 3 free: locator; answered by Complete | `[PROTOCOL Lob 'L']` | not yet |
-| P-LOB-5 | 4 hold: locator, kept past its transaction's commit; answered by Complete | `[PROTOCOL Lob 'L']` | not yet |
+| P-LOB-1 | 0 read: locator, from, count, characters flag; answered by a Lob reply of data | `[PROTOCOL Lob 'L']` | done |
+| P-LOB-2 | 1 create: kind; answered by a Lob reply of a locator | `[PROTOCOL Lob 'L']` | done |
+| P-LOB-3 | 2 append: locator, bytes, a character free to split between appends; answered by Complete | `[PROTOCOL Lob 'L']` | done |
+| P-LOB-4 | 3 free: locator; answered by Complete | `[PROTOCOL Lob 'L']` | done |
+| P-LOB-5 | 4 hold: locator, kept past its transaction's commit; answered by Complete | `[PROTOCOL Lob 'L']` | done |
 
 ### Cancel 'Z'
 
@@ -611,14 +611,14 @@ From `doc/client/02-library.md`, The Client Library.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| C-LOB-1 | A CLOB or BLOB of at most SERVER.LOB_INLINE_BYTES whole in its row; a longer one as its locator and lengths | `[CLIENT Large objects]` | not yet |
-| C-LOB-2 | Read a range, by octets or by a CLOB's characters, at most 256 KiB a chunk | `[CLIENT Large objects]` | not yet |
-| C-LOB-3 | A reader of the whole value, a chunk at a time, as the language's stream | `[CLIENT Large objects]` | not yet |
-| C-LOB-4 | A locator valid until its transaction ends, the transaction kept open under autocommit too | `[CLIENT Large objects]` | not yet |
-| C-LOB-5 | Free a locator | `[CLIENT Large objects]` | not yet |
-| C-LOB-6 | Hold a locator past the commit, until it is freed or a rollback ends it | `[CLIENT Large objects]` | not yet |
-| C-LOB-7 | Create a value a piece at a time through a writer, and pass it as a parameter | `[CLIENT Large objects]` | not yet |
-| C-LOB-8 | A CLOB's octets UTF-8, a character split between writes | `[CLIENT Large objects]` | not yet |
+| C-LOB-1 | A CLOB or BLOB of at most SERVER.LOB_INLINE_BYTES whole in its row; a longer one as its locator and lengths | `[CLIENT Large objects]` | done |
+| C-LOB-2 | Read a range, by octets or by a CLOB's characters, at most 256 KiB a chunk | `[CLIENT Large objects]` | done |
+| C-LOB-3 | A reader of the whole value, a chunk at a time, as the language's stream | `[CLIENT Large objects]` | done |
+| C-LOB-4 | A locator valid until its transaction ends, the transaction kept open under autocommit too | `[CLIENT Large objects]` | done |
+| C-LOB-5 | Free a locator | `[CLIENT Large objects]` | done |
+| C-LOB-6 | Hold a locator past the commit, until it is freed or a rollback ends it | `[CLIENT Large objects]` | done |
+| C-LOB-7 | Create a value a piece at a time through a writer, and pass it as a parameter | `[CLIENT Large objects]` | done |
+| C-LOB-8 | A CLOB's octets UTF-8, a character split between writes | `[CLIENT Large objects]` | done |
 | C-LOB-9 | An import's field longer than 64 KiB for a CLOB or BLOB column sent by creating a large object | `[CLIENT Large objects]` | not yet |
 
 ### XML values

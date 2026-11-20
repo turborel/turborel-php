@@ -78,12 +78,12 @@ final class EndingTest extends LiveTestCase
             $connection = Connection::connect($target, 'ann', new Trust());
             $canceller = $connection->canceller();
             self::assertNotNull($canceller);
-            $connection->send(new Query(self::LONG));
+            $connection->wire()->send(new Query(self::LONG));
             // Cancelled once it runs: a cancel before it is of nothing.
             do {
                 $canceller->cancel();
             } while (!$connection->wire()->stream->waiting(0.05));
-            $reply = $connection->receive();
+            $reply = $connection->wire()->receive();
             self::assertInstanceOf(Error::class, $reply);
             self::assertSame(['TB920', -920], [$reply->failure->sqlstate, $reply->failure->sqlcode]);
             self::assertCount(1, $connection->query('VALUES 1')->rows, 'the session goes on');
