@@ -52,6 +52,14 @@ jobs:
       - name: Every check
         timeout-minutes: 30
         run: composer verify
+      # A runner's log needs a token to read, so the tests' failures are told
+      # again as annotations on the run's page.
+      - name: The tests' failures, as annotations
+        if: failure()
+        shell: bash
+        run: |
+          vendor/bin/phpunit --log-junit build/junit.xml || true
+          php tools/run.php annotate build/junit.xml
 
   coverage:
     runs-on: ubuntu-latest

@@ -11,6 +11,9 @@ namespace Turborel\Tools;
  */
 final class Check
 {
+    /** The command that tells a JUnit report's failures as GitHub's workflow commands. */
+    private const string ANNOTATE = 'annotate';
+
     /** The command that checks the coverage report against the floor. */
     private const string COVERAGE = 'coverage';
 
@@ -33,11 +36,17 @@ final class Check
      * Runs the checks `$arguments` name over the project at `$root`,
      * prints what each finds, and gives the exit status.
      *
-     * @param list<string> $arguments none for the source checks, or
-     *                                `coverage` and a Clover report's path
+     * @param list<string> $arguments none for the source checks, `coverage` and a Clover report's path, or `annotate` and a JUnit report's
      */
     public static function main(string $root, array $arguments): int
     {
+        if (($arguments[0] ?? null) === self::ANNOTATE) {
+            foreach (Annotations::of($arguments[1] ?? '') as $line) {
+                fwrite(STDOUT, $line . PHP_EOL);
+            }
+
+            return self::PASSED;
+        }
         $findings = ($arguments[0] ?? null) === self::COVERAGE
             ? CoverageFloor::check($arguments[1] ?? '')
             : self::sources($root);

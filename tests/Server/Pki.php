@@ -54,11 +54,11 @@ final class Pki
     {
         $config = "{$directory}/openssl.cnf";
         file_put_contents($config, self::CONFIG);
-        $authorityKey = self::key();
+        $authorityKey = self::key($config);
         $authority = self::sign(['commonName' => 'turborel-php test authority'], $authorityKey, null, $authorityKey, [$config, 'authority', 1]);
-        $serverKey = self::key();
+        $serverKey = self::key($config);
         $server = self::sign(['commonName' => 'localhost'], $serverKey, $authority, $authorityKey, [$config, 'server', 2]);
-        $clientKey = self::key();
+        $clientKey = self::key($config);
         $client = self::sign(['commonName' => 'ann'], $clientKey, $authority, $authorityKey, [$config, 'client', 3]);
         $pki = new self("{$directory}/ca.pem", "{$directory}/server.pem", "{$directory}/server.key", "{$directory}/ann.pem", "{$directory}/ann.key");
         foreach ([[$pki->authority, $authority], [$pki->serverCertificate, $server], [$pki->clientCertificate, $client]] as [$path, $certificate]) {
@@ -71,12 +71,12 @@ final class Pki
         return $pki;
     }
 
-    /** A new key on P-256. */
-    private static function key(): \OpenSSLAsymmetricKey
+    /** A new key on P-256, OpenSSL configured by `$config`, as Windows' PHP needs it to be. */
+    private static function key(string $config): \OpenSSLAsymmetricKey
     {
-        $key = openssl_pkey_new(['private_key_type' => \OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
+        $key = openssl_pkey_new(['private_key_type' => \OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1', 'config' => $config]);
         if (!$key instanceof \OpenSSLAsymmetricKey) {
-            throw new \RuntimeException('no key could be made');
+            throw new \RuntimeException('no key could be made: ' . openssl_error_string());
         }
 
         return $key;
