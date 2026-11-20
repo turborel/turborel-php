@@ -56,19 +56,20 @@ the rest of this page at M3.
 ## EXAMPLES
 
 ```php
+use Turborel\Value\Json;
+
 $json = Json::fromText('{"b":1,"a":2,"b":3}');
 echo $json->text(), PHP_EOL;
-var_dump($json->value());
+print_r($json->value());
 ```
 
 ```text
 {"b":1,"a":2,"b":3}
-object(stdClass)#5 (2) {
-  ["b"]=>
-  int(1)
-  ["a"]=>
-  int(2)
-}
+stdClass Object
+(
+    [b] => 1
+    [a] => 2
+)
 ```
 
 ## STANDARD

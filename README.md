@@ -29,9 +29,9 @@ large objects, bulk copy, import and export, settings from a URI, the
 environment and service and password files, several servers, pipelines
 and pools.
 
-The driver is built in milestones, M0 to M8, and does not connect to a
-server yet. [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by
-row, and [TODO.md](TODO.md) what is open.
+The driver is built in milestones, M0 to M8; every one but M8's parity
+audit is done. [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row
+by row, and [TODO.md](TODO.md) what is open.
 
 ## Requirements
 
@@ -67,19 +67,19 @@ requires the package:
 
 ## A first query
 
-This is what the standard API will be once milestone M7 builds it and
-M8's audit checks it. None of it runs yet, and its names may change
-until then.
+The standard API, as milestone M7 built it; its names may change until
+M8's audit checks it.
 
 ```php
 use Turborel\Pdo\Connection;
+use Turborel\Pdo\Pdo;
 use Turborel\TurborelException;
 
 try {
     $db = new Connection('turborel://ann@db.example/?tls_mode=verify-full', password: 'ann\'s');
     $staff = $db->prepare('SELECT ID, NAME FROM STAFF WHERE ID < ? ORDER BY ID');
     $staff->execute([3]);
-    foreach ($staff->fetchAll(Connection::FETCH_ASSOC) as $row) {
+    foreach ($staff->fetchAll(Pdo::FETCH_ASSOC) as $row) {
         echo $row['ID'], ' ', $row['NAME'], PHP_EOL;
     }
 } catch (TurborelException $failure) {
