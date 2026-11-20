@@ -22,7 +22,7 @@ final readonly class Json implements SqlValue
     /**
      * The value whose stored form is `$bytes`, checked whole.
      *
-     * @throws TurborelException SQLSTATE 22032 if they are damaged
+     * @throws TurborelException SQLSTATE TB916 if they are damaged, 0A000 if they nest past 128 arrays and objects
      */
     public function __construct(
         /** Its stored form: a version octet, 1, then its root node. */
@@ -37,7 +37,7 @@ final readonly class Json implements SqlValue
      * keys or a \stdClass as an object, a \JsonSerializable as what it
      * serializes to, or a Json.
      *
-     * @throws TurborelException SQLSTATE 22032 if JSON has no item of it
+     * @throws TurborelException SQLSTATE 22032 if JSON has no item of it; 0A000 if it nests past 128 arrays and objects, or its stored form is past 256 MiB
      */
     public static function fromValue(mixed $value): self
     {
@@ -49,7 +49,7 @@ final readonly class Json implements SqlValue
      * with no exponent exact, one with an exponent approximate; an
      * object's members all kept, in order.
      *
-     * @throws TurborelException SQLSTATE 22032 if it is no JSON text, 22003 if a number is beyond turborel's
+     * @throws TurborelException SQLSTATE 22032 if it is no JSON text, 22003 if a number is beyond turborel's, 0A000 if it nests past 128
      */
     public static function fromText(string $text): self
     {

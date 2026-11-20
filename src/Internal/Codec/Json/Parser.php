@@ -108,12 +108,13 @@ final class Parser
     /**
      * A value [RFC 8259 §3], `$depth` arrays and objects in.
      *
-     * @throws TurborelException SQLSTATE 22032 if it does not parse
+     * @throws TurborelException SQLSTATE 22032 if it does not parse, 0A000 if it opens a 129th array or object
      */
     private function value(int $depth): mixed
     {
-        if ($depth > Node::MAX_NESTING) {
-            throw $this->invalid('arrays and objects nest too deep');
+        $opens = $this->peek() === '{' || $this->peek() === '[';
+        if ($opens && $depth + 1 > Node::MAX_NESTING) {
+            throw ValueFailure::beyondJson('arrays and objects nest too deep');
         }
 
         return match ($this->peek()) {

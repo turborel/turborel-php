@@ -33,6 +33,18 @@ final class ValueFailure
     /** SQLSTATE 07006, restricted data type attribute violation. */
     public const string RESTRICTED = '07006';
 
+    /** SQLCODE -916, of a stored form that is damaged, as turborel's Code::Corrupt. */
+    public const int CORRUPT_CODE = -916;
+
+    /** SQLSTATE TB916, of a stored form that is damaged. */
+    public const string CORRUPT = 'TB916';
+
+    /** SQLCODE -900, of what is beyond turborel's limits, as its Code::Unsupported. */
+    public const int UNSUPPORTED_CODE = -900;
+
+    /** SQLSTATE 0A000, feature not supported: beyond turborel's limits. */
+    public const string UNSUPPORTED = '0A000';
+
     /** SQLSTATE 2200N, invalid XML content. */
     public const string INVALID_XML_CONTENT = '2200N';
 
@@ -52,6 +64,18 @@ final class ValueFailure
     public static function invalidJson(string $message): TurborelException
     {
         return new TurborelException($message, self::INVALID_JSON, self::DATA);
+    }
+
+    /** A JSON value's octets damaged: `$why` says how. */
+    public static function damagedJson(string $why): TurborelException
+    {
+        return new TurborelException("a JSON value's octets are damaged: {$why}", self::CORRUPT, self::CORRUPT_CODE);
+    }
+
+    /** A JSON item beyond turborel's limits: `$why` says which. */
+    public static function beyondJson(string $why): TurborelException
+    {
+        return new TurborelException("the SQL/JSON item is beyond turborel's limits: {$why}", self::UNSUPPORTED, self::UNSUPPORTED_CODE);
     }
 
     /** Text that is not well-formed XML content: `$message` says why. */

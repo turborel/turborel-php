@@ -52,7 +52,7 @@ final class Decoder
      * Exact, a DecFloat, a float, a string, a Datetime, a list, or a
      * JsonObject.
      *
-     * @throws TurborelException SQLSTATE 22032 if its octets are damaged
+     * @throws TurborelException SQLSTATE TB916 if its octets are damaged, 0A000 if it nests past 128
      */
     public static function decode(string $bytes): mixed
     {
@@ -70,7 +70,7 @@ final class Decoder
     /** The failure of damaged octets, saying `$why`. */
     private static function damaged(string $why): TurborelException
     {
-        return ValueFailure::invalidJson("a JSON value's octets are damaged: {$why}");
+        return ValueFailure::damagedJson($why);
     }
 
     /**
@@ -83,7 +83,7 @@ final class Decoder
     private function node(int $at, int $depth): array
     {
         if ($depth > Node::MAX_NESTING) {
-            throw self::damaged('arrays and objects nest too deep');
+            throw ValueFailure::beyondJson('arrays and objects nest too deep');
         }
         $body = $at + 1;
 

@@ -55,6 +55,8 @@ The failures the driver raises itself:
 | 22003 | -301 | A number, or a field's value, out of its range |
 | 22021 | -301 | A string that is not UTF-8 |
 | 22032 | -301 | JSON text that does not parse |
+| TB916 | -916 | A JSON stored form that is damaged |
+| 0A000 | -900 | JSON past turborel's limits: nested more than 128 deep, or a stored form past 256 MiB |
 | 2200N | -301 | An XML value's text that is not well-formed content, as `nodes()` parses it |
 | 07006 | -921 | A PHP value the protocol has no value for |
 

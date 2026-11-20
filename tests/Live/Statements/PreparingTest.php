@@ -67,6 +67,29 @@ final class PreparingTest extends LiveTestCase
     }
 
     /**
+     * Verifies: [PROTOCOL Prepared 'P'] [PROTOCOL Execute 'E'] [CLIENT Prepared statements]:
+     * a CALL's parameters are its inputs alone, and its columns one for each
+     * `?` of an OUT or INOUT parameter, in the procedure's order, an INOUT
+     * one both; executed, it sends one row of those parameters' values
+     * before its Complete, which is the CALL's outcome.
+     *
+     * @throws TurborelException never from the statements
+     */
+    #[Test]
+    public function aCallGivesItsOutputParametersAsARow(): void
+    {
+        $connection = self::owner();
+        $connection->query('CREATE PROCEDURE P_OUT(IN A INTEGER, OUT B INTEGER, INOUT C INTEGER) LANGUAGE SQL MODIFIES SQL DATA '
+            . 'BEGIN SET B = A * 2; SET C = C + 1; END');
+        $call = $connection->prepare('CALL P_OUT(?, ?, ?)');
+        self::assertCount(2, $call->parameters);
+        self::assertSame(['B', 'C'], array_map(static fn(Column $column): ?string => $column->name, $call->columns));
+        $outcome = $connection->execute($call, [3, 10]);
+        self::assertSame([['6', '11'], 0], [array_map(static fn(mixed $value): string => $value instanceof Exact ? $value->units : '', $outcome->rows[0] ?? []), $outcome->completed?->sqlcode()]);
+        $connection->terminate();
+    }
+
+    /**
      * Verifies: [CLIENT Prepared statements] [PROTOCOL Execute 'E']
      * [PROTOCOL Fetch 'F'] [PROTOCOL Close 'C'] [PROTOCOL Suspended 'S']:
      * a cursor is opened and gives its first rows, then Suspended while it

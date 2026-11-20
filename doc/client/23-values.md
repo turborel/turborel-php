@@ -47,7 +47,9 @@ the rest of this page at M3.
 |---|---|---|
 | 22003 | -301 | A value, or one of its fields, out of its range: an exact number's units past an `i128`, a `DecFloat` past 34 digits, a UUID not of 16 octets |
 | 22021 | -301 | A string, or a character large object, that is not UTF-8 |
-| 22032 | -301 | JSON text that does not parse, damaged stored form, or JSON with no text, a datetime's |
+| 22032 | -301 | JSON text that does not parse, or JSON with no text, a datetime's |
+| TB916 | -916 | A JSON stored form that is damaged, or of another version |
+| 0A000 | -900 | JSON nested more than 128 deep, or a stored form past 256 MiB: turborel's limits |
 | 07006 | -921 | A PHP value no SQL value is, sent as a parameter |
 | 08006 | -919 | A value a server sent that cannot be read |
 

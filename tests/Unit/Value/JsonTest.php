@@ -168,7 +168,6 @@ final class JsonTest extends CodecTestCase
         yield 'too great' => ['1E400', ValueFailure::OUT_OF_RANGE];
         yield 'too small, not zero' => ['1E-400', ValueFailure::OUT_OF_RANGE];
         yield '35 significant digits' => ['1234567890123456789012345678901234.5', ValueFailure::OUT_OF_RANGE];
-        yield 'nested too deep' => [str_repeat('[', 130) . str_repeat(']', 130), ValueFailure::INVALID_JSON];
     }
 
     /**
@@ -177,13 +176,13 @@ final class JsonTest extends CodecTestCase
      * the root, a tag of no node, a string not UTF-8, a node past the
      * document, an offset or a size not its elements', a directory not
      * sorted or not listing each member, a datetime's moment or zoned flag
-     * of none, and nodes nested too deep.
+     * of none (SQLSTATE TB916, SQLCODE -916, as turborel's Code::Corrupt).
      */
     #[Test]
     #[DataProvider('damaged')]
     public function damagedOctetsAreRefused(string $bytes): void
     {
-        self::assertFailure(ValueFailure::INVALID_JSON, ValueFailure::DATA, static fn(): Json => new Json(self::hex($bytes)));
+        self::assertFailure(ValueFailure::CORRUPT, ValueFailure::CORRUPT_CODE, static fn(): Json => new Json(self::hex($bytes)));
     }
 
     /**
@@ -209,7 +208,56 @@ final class JsonTest extends CodecTestCase
         yield 'a moment of 3' => ['01 09 03 00 00 00 00 00 00 00 00 00 00 00 00'];
         yield 'a zoned flag of 2' => ['01 09 02 00 00 00 00 00 00 00 00 00 00 02 00'];
         yield 'a DECFLOAT out of range' => ['01 06 01 ' . str_repeat('00 ', 15) . '01 18 00 00'];
-        yield 'arrays 130 deep' => ['01 ' . str_repeat('0A 01 00 00 00 00 00 00 00 00 00 00 00 ', 130) . '00'];
+    }
+
+    /**
+     * Verifies: [PROTOCOL JSON values]: the page's examples are written
+     * octet for octet: `{"a":[1,"x"]}` in 51 octets, and `{"b":1,"a":2}`
+     * with its members in that order and `a` first in its directory; a
+     * decimal keeps the scale it was written with, in the narrowest of
+     * the three exact nodes.
+     *
+     * @throws TurborelException never, the values being JSON's
+     */
+    #[Test]
+    public function thePagesExamplesAreWrittenOctetForOctet(): void
+    {
+        $example = '01 0B 01 00 00 00 25 00 00 00 00 00 00 00 01 00 00 00 61 0A 02 00 00 00 0F 00 00 00 00 00 00 00 09 00 00 00 '
+            . '03 01 00 00 00 00 00 00 00 08 01 00 00 00 78';
+        self::assertSame(self::hex($example), Json::fromText('{"a":[1,"x"]}')->bytes);
+        self::assertSame(51, \strlen(Json::fromText('{"a":[1,"x"]}')->bytes));
+        $two = Json::fromText('{"b":1,"a":2}');
+        self::assertSame(self::hex('0E 00 00 00 00 00 00 00'), substr($two->bytes, 10, 8));
+        self::assertSame('{"b":1,"a":2}', $two->text());
+        self::assertSame(self::hex('01 04 96 00 00 00 00 00 00 00 02'), Json::fromText('1.50')->bytes);
+        self::assertSame(self::hex('01 03 2A 00 00 00 00 00 00 00'), Json::fromValue(new Exact('42', 0))->bytes);
+        self::assertSame(self::hex('01 05 01' . str_repeat(' 00', 15) . ' 2C 01 00 00'), Json::fromValue(new Exact('1', 300))->bytes);
+        self::assertSame(self::hex('01 03 00 00 00 00 00 00 00 80'), Json::fromValue(new Exact('-9223372036854775808', 0))->bytes);
+        self::assertSame(self::hex('01 05 00 00 00 00 00 00 00 80' . str_repeat(' 00', 8) . ' 00 00 00 00'), Json::fromValue(new Exact('9223372036854775808', 0))->bytes);
+        self::assertSame('1.50', Json::fromText('1.50')->text());
+    }
+
+    /**
+     * Verifies: [PROTOCOL JSON values]: arrays and objects nest at most 128
+     * deep in JSON text, as turborel parses it, and a stored form's nodes
+     * at most 128 within its root; past either, SQLSTATE 0A000, SQLCODE
+     * -900, turborel's limits.
+     *
+     * @throws TurborelException never from the values within the limits
+     */
+    #[Test]
+    public function nestingIsBoundedAsTurborelBoundsIt(): void
+    {
+        Json::fromText(str_repeat('[', 128) . str_repeat(']', 128));
+        self::assertFailure(ValueFailure::UNSUPPORTED, ValueFailure::UNSUPPORTED_CODE, static fn(): Json => Json::fromText(str_repeat('[', 129) . str_repeat(']', 129)));
+        $deep = [];
+        for ($level = 1; $level < 129; $level++) {
+            $deep = [$deep];
+        }
+        $stored = Json::fromValue($deep)->bytes;
+        $inner = substr($stored, 1);
+        $deeper = "\x01\x0A" . pack('V3', 1, \strlen($inner), 0) . $inner;
+        self::assertFailure(ValueFailure::UNSUPPORTED, ValueFailure::UNSUPPORTED_CODE, static fn(): Json => new Json($deeper));
     }
 
     /**
@@ -232,7 +280,8 @@ final class JsonTest extends CodecTestCase
      * items: an array of string keys and a \stdClass as objects, a
      * \JsonSerializable as what it serializes to, a Json as its item; a
      * value JSON has no item of, a datetime's or a non-finite number's
-     * text, and nesting past 128 are refused (SQLSTATE 22032).
+     * text are refused (SQLSTATE 22032), and nesting past turborel's limit
+     * with SQLSTATE 0A000.
      *
      * @throws TurborelException never from the values JSON has items of
      */
@@ -254,9 +303,8 @@ final class JsonTest extends CodecTestCase
         for ($level = 0; $level < 130; $level++) {
             $deep = [$deep];
         }
-        foreach ([fopen('php://memory', 'r'), $deep] as $value) {
-            self::assertFailure(ValueFailure::INVALID_JSON, ValueFailure::DATA, static fn(): Json => Json::fromValue($value));
-        }
+        self::assertFailure(ValueFailure::INVALID_JSON, ValueFailure::DATA, static fn(): Json => Json::fromValue(fopen('php://memory', 'r')));
+        self::assertFailure(ValueFailure::UNSUPPORTED, ValueFailure::UNSUPPORTED_CODE, static fn(): Json => Json::fromValue($deep));
         self::assertFailure(ValueFailure::INVALID_JSON, ValueFailure::DATA, static fn(): string => Json::fromValue(new Datetime(Moment::Date, 0))->text());
         self::assertFailure(ValueFailure::INVALID_JSON, ValueFailure::DATA, static fn(): string => Json::fromValue(\NAN)->text());
         self::assertFailure(ValueFailure::NOT_IN_REPERTOIRE, ValueFailure::DATA, static fn(): Json => Json::fromValue("\xFF"));

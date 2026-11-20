@@ -56,7 +56,7 @@ final class Encoder
     {
         $document = \chr(Node::VERSION) . self::node($value, 0);
         if (\strlen($document) > Node::MAX_OCTETS) {
-            throw ValueFailure::invalidJson('a JSON value\'s stored form is longer than 256 MiB');
+            throw ValueFailure::beyondJson('its stored form is longer than 256 MiB');
         }
 
         return $document;
@@ -65,12 +65,12 @@ final class Encoder
     /**
      * The node of `$value`, `$depth` arrays and objects in.
      *
-     * @throws TurborelException SQLSTATE 22032 if JSON has no item of it, or it nests too deep
+     * @throws TurborelException SQLSTATE 22032 if JSON has no item of it; 0A000 if it nests too deep
      */
     private static function node(mixed $value, int $depth): string
     {
         if ($depth > Node::MAX_NESTING) {
-            throw ValueFailure::invalidJson('arrays and objects nest too deep');
+            throw ValueFailure::beyondJson('arrays and objects nest too deep');
         }
 
         return match (true) {

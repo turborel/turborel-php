@@ -9,7 +9,7 @@ namespace Turborel\Tools;
  * manual prints them, its pages' titles among them: `[PROTOCOL Frames]`
  * cites doc/client/05-protocol.md, and `[CLIENT Pipelines]`
  * doc/client/02-library.md or 02-library-connections.md, copied at the
- * Turborel commit CONFORMANCE.md names, 1c4187e4. A heading the manual
+ * Turborel commit CONFORMANCE.md names, b40bd830. A heading the manual
  * changes is changed here in the same commit.
  */
 final class Headings
@@ -17,7 +17,7 @@ final class Headings
     /** The headings of doc/client/05-protocol.md, its title first, in its order. */
     public const array PROTOCOL = [
         'The Native Protocol', 'Frames', 'Compressed frames', 'Values and fields', 'Data types', 'Values',
-        'Composite fields', 'The tail', 'Opening a connection', 'Mechanisms', 'Capabilities',
+        'JSON values', 'Composite fields', 'The tail', 'Opening a connection', 'Mechanisms', 'Capabilities',
         'Requests', "Hello 'H'", "Answer 'A'", "Query 'Q'", "Prepare 'P'", "Execute 'E'",
         "Fetch 'F'", "Close 'C'", "Deallocate 'D'", "Lob 'L'", "Cancel 'Z'", "Terminate 'X'",
         "Describe 'Y'", "Ping 'G'", "Reset 'W'", "ChangeUser 'U'", "CopyIn 'I'", "CopyData 'J'",

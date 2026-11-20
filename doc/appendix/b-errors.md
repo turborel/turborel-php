@@ -15,6 +15,8 @@ characters of the SQLSTATE are its class.
 | 22003 | -301 | A number, or a field's value, is out of its range | no |
 | 22021 | -301 | A string is not UTF-8 | no |
 | 22032 | -301 | JSON text does not parse | no |
+| TB916 | -916 | A JSON stored form is damaged | no |
+| 0A000 | -900 | JSON is past turborel's limits, nested more than 128 deep or a stored form past 256 MiB | no |
 | 2200N | -301 | An XML value's text is not well-formed content | no |
 | 07006 | -921 | The protocol has no value for a PHP value | no |
 

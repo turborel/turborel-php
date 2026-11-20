@@ -132,6 +132,33 @@ final class SessionTest extends LiveTestCase
     }
 
     /**
+     * Verifies: [PROTOCOL Status 'T']: at login before Ready, and after a
+     * Reset before its Complete, the server tells one of each name in the
+     * page's table, in its order, then the session's own settings; after a
+     * statement, only what it changed. CATALOG is the database's, as a
+     * string, empty were it null.
+     *
+     * @throws TurborelException never from the statements
+     */
+    #[Test]
+    public function statusesComeInThePagesOrder(): void
+    {
+        $names = ['SERVER_VERSION', 'AUTHORIZATION', 'SCHEMA', 'READ_ONLY', 'SERVER_READ_ONLY', 'CATALOG', 'OWNER'];
+        $connection = self::owner();
+        self::assertSame($names, \array_slice(array_keys($connection->settings()), 0, 7));
+        self::assertSame('TURBOREL', $connection->setting('CATALOG'));
+        $connection->query("SET SESSION.TIME_ZONE = '+02:00'");
+        $connection->wire()->told->settings = [];
+        $connection->query("SET SESSION.TIME_ZONE = '+03:00'");
+        self::assertSame(['SESSION.TIME_ZONE' => '+03:00'], $connection->settings());
+        $connection->wire()->told->settings = [];
+        $connection->reset();
+        self::assertSame($names, \array_slice(array_keys($connection->settings()), 0, 7));
+        self::assertGreaterThan(7, \count($connection->settings()));
+        $connection->terminate();
+    }
+
+    /**
      * Verifies: [PROTOCOL Ping 'G'] [PROTOCOL Reset 'W'] [CLIENT Controlling the session]:
      * a ping is answered by Pong; a reset rolls an active transaction back,
      * telling notice 01T01, and keeps the session's user; what it rolled
@@ -159,7 +186,7 @@ final class SessionTest extends LiveTestCase
      * a connection authenticated again as another user, by the same
      * Challenge and Answer steps as Hello's, is that user's new session,
      * renewed as by Reset: its transaction rolled back, told by notice
-     * 01T01, none active after (RULES.md D8), under a new cancel key, with
+     * 01T01, none active after, under a new cancel key, with
      * the same capabilities; refused, the connection fails.
      *
      * @throws TurborelException never from the accepted change

@@ -453,14 +453,6 @@ rule here, the rule is kept:
   is the program's error. Every value the driver checks itself fails as
   `TurborelException` (R-ERR-1).
 
-Where turborel-client's code contradicts what The Native Protocol or
-turborel's own documents say outright, the driver does as they say, and
-each such case is listed here for the reference to be fixed:
-
-- After ChangeUser, no transaction is active. The protocol renews the
-  session as Reset does, so the transaction is rolled back; turborel-client
-  keeps its flag of an active transaction as it was.
-
 Where PHP cannot do what turborel-client does, the driver does as
 turborel's owner decided (2026-11-19):
 

@@ -95,7 +95,7 @@ final readonly class Control
                 $this->wire->send(new Answer($mechanism->answer($reply->challenge)));
             } elseif ($reply instanceof Ready) {
                 $mechanism->ready();
-                // The session is renewed as by Reset, so no transaction is active (RULES.md D8).
+                // The session is renewed as by Reset, so no transaction is active.
                 $this->wire->active = false;
 
                 return $reply;
