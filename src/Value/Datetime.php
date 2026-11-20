@@ -10,7 +10,9 @@ use Turborel\TurborelException;
 /**
  * A date, a time or a timestamp, as the protocol writes each: whether its
  * type is WITH TIME ZONE, its precision, the displacement it is shown in,
- * in minutes, and its instant, microseconds in UTC [PROTOCOL Values].
+ * in minutes, and its instant, microseconds in UTC [PROTOCOL Values]: of
+ * a timestamp, from 0001-01-01 00:00:00; of a date, its midnight's; of a
+ * time, from midnight, within a day.
  */
 final readonly class Datetime implements SqlValue
 {
@@ -31,7 +33,7 @@ final readonly class Datetime implements SqlValue
     public function __construct(
         /** Whether it is a date, a time or a timestamp. */
         public Moment $moment,
-        /** Its instant: microseconds in UTC. */
+        /** Its instant: microseconds in UTC, from 0001-01-01 00:00:00, or of a time from midnight. */
         public int $utcMicros,
         /** The zone's displacement it is shown in, in minutes. */
         public int $displacement = 0,

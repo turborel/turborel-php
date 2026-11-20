@@ -9,7 +9,7 @@ namespace Turborel\Tools;
  * manual prints them, its pages' titles among them: `[PROTOCOL Frames]`
  * cites doc/client/05-protocol.md, and `[CLIENT Pipelines]`
  * doc/client/02-library.md or 02-library-connections.md, copied at the
- * Turborel commit CONFORMANCE.md names, e4f08f77. A heading the manual
+ * Turborel commit CONFORMANCE.md names, 1c4187e4. A heading the manual
  * changes is changed here in the same commit.
  */
 final class Headings
