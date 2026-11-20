@@ -1,0 +1,6 @@
+#!/bin/sh
+# Every check a change must pass, before each commit (RULES.md R-PROC-1).
+# The checks live in composer.json's scripts; this file only hands over to
+# them, because git runs hooks as scripts (on Windows, through the sh Git
+# for Windows ships). Install with `composer install-hooks`.
+exec composer verify

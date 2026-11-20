@@ -1,0 +1,19 @@
+# Updates to the development tools Composer installs, and to the pinned
+# GitHub Actions, proposed weekly. The driver has no run-time dependency to
+# update (RULES.md D4); a new one needs a decision first (R-DEP-1).
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies]
+    commit-message:
+      prefix: build
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies]
+    commit-message:
+      prefix: ci

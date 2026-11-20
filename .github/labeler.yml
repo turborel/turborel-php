@@ -1,0 +1,66 @@
+# Each pull request is labelled with the areas of the paths it changes:
+# src/ and its tests by layer, tests mirroring src/ under tests/<suite>/.
+
+area/codec:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Internal/Codec/**", "tests/*/Internal/Codec/**"]
+
+area/transport:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Internal/Transport/**", "tests/*/Internal/Transport/**"]
+
+area/auth:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Internal/Auth/**", "tests/*/Internal/Auth/**"]
+
+area/tls:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Internal/Tls/**", "tests/*/Internal/Tls/**"]
+
+area/session:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Session/**", "tests/*/Session/**", "src/Internal/Session/**", "tests/*/Internal/Session/**"]
+
+area/statements:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Statements/**", "tests/*/Statements/**", "src/Internal/Statements/**", "tests/*/Internal/Statements/**"]
+
+area/lobs:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Lobs/**", "tests/*/Lobs/**", "src/Internal/Lobs/**", "tests/*/Internal/Lobs/**"]
+
+area/copy:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Copy/**", "tests/*/Copy/**", "src/Internal/Copy/**", "tests/*/Internal/Copy/**"]
+
+area/settings:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Settings/**", "tests/*/Settings/**", "src/Internal/Settings/**", "tests/*/Internal/Settings/**"]
+
+area/pipeline:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Pipeline/**", "tests/*/Pipeline/**", "src/Internal/Pipeline/**", "tests/*/Internal/Pipeline/**"]
+
+area/pool:
+  - changed-files:
+      - any-glob-to-any-file: ["src/Pool/**", "tests/*/Pool/**", "src/Internal/Pool/**", "tests/*/Internal/Pool/**"]
+
+area/api:
+  - changed-files:
+      - any-glob-to-any-file: ["src/*.php", "src/Internal/*.php", "src/Pdo/**", "tests/*/*.php", "tests/*/Pdo/**"]
+
+area/doc:
+  - changed-files:
+      - any-glob-to-any-file: ["doc/**", "*.md"]
+
+area/ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**"]
+
+area/build:
+  - changed-files:
+      - any-glob-to-any-file: ["composer.json", "composer.lock", "phpstan.neon.dist", "phpunit.xml.dist", ".php-cs-fixer.dist.php", "tools/**", ".githooks/**", ".gitattributes", ".gitignore"]
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: ["composer.json", "composer.lock"]

@@ -1,0 +1,6 @@
+# Composer's installed packages, and everything the tools write.
+/vendor/
+/build/
+.idea/
+.DS_Store
+.claude/

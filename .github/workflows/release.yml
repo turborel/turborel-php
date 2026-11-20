@@ -1,0 +1,59 @@
+# Builds and checks the package a release would publish, and publishes
+# nothing (VERSIONING.md, Publishing). It runs only by hand. The publish job
+# is written but disabled: the owner enables it once every turborel driver
+# is done, and not before.
+name: release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: "8.3"
+          extensions: openssl, zlib, bcmath, simplexml
+          coverage: none
+          tools: composer:v2
+      - name: Install the development tools
+        run: composer install --no-interaction --no-progress
+      - name: Every check
+        run: composer verify
+      # The archive is what Packagist serves: git archive's files, less
+      # those .gitattributes marks export-ignore, LICENSE among those kept.
+      - name: Build the package
+        run: composer archive --format=zip --dir=build/release --file=turborel-php
+      - name: Check the package
+        run: |
+          unzip -l build/release/turborel-php.zip
+          unzip -l build/release/turborel-php.zip | grep -q ' LICENSE$'
+          unzip -l build/release/turborel-php.zip | grep -q ' composer.json$'
+          ! unzip -l build/release/turborel-php.zip | grep -q ' tests/'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: turborel-php
+          path: build/release/turborel-php.zip
+
+  publish:
+    # Disabled: the owner enables this job, by removing this line, once
+    # every driver is done (VERSIONING.md). Packagist reads the release from
+    # its git tag, which the owner pushes; this asks Packagist to read it.
+    if: false
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask Packagist to read the release
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        run: |
+          curl --fail -XPOST -H 'content-type:application/json' \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -d '{"repository":{"url":"https://packagist.org/packages/turborel/turborel"}}'

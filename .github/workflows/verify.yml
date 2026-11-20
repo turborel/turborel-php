@@ -1,0 +1,61 @@
+# Every check a change must pass (RULES.md R-PROC-1), on each platform the
+# driver claims to run on and each PHP it supports (D3, R-PLAT-1), plus the
+# coverage floor (R-COV). Actions are pinned by full commit SHA, the release
+# in a comment, so a moved tag cannot change what runs.
+name: verify
+
+# A pull request is checked once, through pull_request, and main again once
+# it is merged. Pushing a branch with an open pull request starts no second
+# set of the same checks.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to a pull request replaces its checks still running. On main
+# every merge is checked to the end.
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        php: ["8.3", "8.4", "8.5"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: openssl, zlib, bcmath, simplexml
+          coverage: none
+          tools: composer:v2
+      - name: Install the development tools
+        run: composer install --no-interaction --no-progress
+      - name: Every check
+        timeout-minutes: 30
+        run: composer verify
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PHP with pcov
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: "8.3"
+          extensions: openssl, zlib, bcmath, simplexml
+          coverage: pcov
+          tools: composer:v2
+      - name: Install the development tools
+        run: composer install --no-interaction --no-progress
+      - name: Coverage and its floor
+        run: composer coverage

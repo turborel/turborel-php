@@ -1,0 +1,40 @@
+name: Feature
+description: Something the driver should do that it does not.
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check TODO.md first: it may be planned already.
+        The driver matches turborel-client and the protocol spec. A feature beyond them is agreed in an issue before it is built.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you need to do, and why the driver cannot do it today, or not well.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Something turborel-client does
+        - Something the protocol spec defines
+        - The PDO-style API
+        - Settings or connecting
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you propose
+      description: How it would work, and the classes, methods or settings it would add. Name the turborel-client feature or the spec's section it follows, if any.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What else would solve the problem, and why this is better.

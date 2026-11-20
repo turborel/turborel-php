@@ -1,0 +1,85 @@
+name: Bug
+description: Something fails, crashes, or reads or sends a wrong value.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Try the latest `main` first, and search the issues: add to one that matches.
+        A vulnerability is never reported here: see SECURITY.md.
+        Put a severe impact first in the title: `[WRONG VALUE]`, `[CRASH]` or `[REGRESSION]`.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happens
+      description: The impact first, in a short paragraph. Then one sentence that sums it up.
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - A value read or sent wrongly
+        - An uncaught error, a fatal error or a hang
+        - Wrong exception, SQLCODE or SQLSTATE
+        - A connection lost or refused that should not be
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: |
+        The smallest PHP script that shows it, with the SQL it runs from an empty database: the schema, the data and the statements.
+        Say how the driver connects (TCP, Unix socket or named pipe; TLS or not; the mechanism) and the capabilities it asks for, if not the default.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: What should happen, and why. Cite the spec's section, e.g. `[PROTOCOL Frames]`, or what turborel-client does.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What happens instead. Give the exception's class, SQLCODE, SQLSTATE and message, and its trace.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression
+      description: If it worked before, give the last good commit and, if you ran `git bisect`, the first bad one.
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "The driver's commit, `git rev-parse --short=12 HEAD`, and the server's (`SERVER_VERSION` or `turboreld --version`)."
+    validations:
+      required: true
+  - type: input
+    id: php
+    attributes:
+      label: PHP
+      description: "`php -v`, and the extensions that matter: openssl, zlib, bcmath."
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: The operating system and version, and the architecture, e.g. "Ubuntu 24.04, x86_64".
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: How often it happens, what you ruled out, the server's log if it says anything.

@@ -1,0 +1,55 @@
+name: Conformance
+description: The driver departs from the protocol spec or from turborel-client.
+labels: ["conformance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check CONFORMANCE.md first: a row marked "not yet" is open work, not a departure.
+        The spec is turborel's doc/client/05-protocol.md, protocol version 1; where the spec and turborel-client differ, turborel-client is right.
+  - type: dropdown
+    id: reference
+    attributes:
+      label: Departs from
+      options:
+        - The protocol spec (doc/client/05-protocol.md)
+        - turborel-client's behaviour (doc/client/02-library.md, 02-library-connections.md)
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: The section
+      description: Its heading, as the driver's tests cite it, e.g. "[PROTOCOL Frames]", "[CLIENT Pipelines]".
+    validations:
+      required: true
+  - type: textarea
+    id: text
+    attributes:
+      label: What the spec or turborel-client does
+      description: Quote the spec, or show what turborel-client does with the same input.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The smallest PHP script, and its SQL from an empty database, that shows the departure.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What the driver does
+      description: Its result, or its exception's SQLCODE, SQLSTATE and message; the bytes sent or read, if you have them.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "The driver's commit, `git rev-parse --short=12 HEAD`, and the server's."
+    validations:
+      required: true

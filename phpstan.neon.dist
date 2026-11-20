@@ -1,0 +1,35 @@
+# Static analysis at PHPStan's highest level, with its strict rules, its
+# PHPUnit and deprecation rules, and TurborelException checked: a function
+# that can raise one says so in @throws, and its callers catch it or say so
+# too (RULES.md D7, R-LINT-1, R-ERR-1). The rule sets are included by path,
+# so no Composer plugin is needed to install them.
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+parameters:
+    level: max
+    phpVersion:
+        min: 80300
+        max: 80599
+    paths:
+        - src
+        - tests
+        - tools
+    tmpDir: build/phpstan
+    checkMissingCallableSignature: true
+    checkUninitializedProperties: true
+    checkBenevolentUnionTypes: true
+    checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    reportAnyTypeWideningInVarTag: true
+    reportPossiblyNonexistentGeneralArrayOffset: true
+    reportPossiblyNonexistentConstantArrayOffset: true
+    reportUnmatchedIgnoredErrors: true
+    exceptions:
+        checkedExceptionClasses:
+            - Turborel\TurborelException
+        check:
+            missingCheckedExceptionInThrows: true
+            tooWideThrowType: true

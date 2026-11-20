@@ -1,0 +1,108 @@
+{
+    "name": "turborel/turborel",
+    "description": "The PHP driver for turborel, speaking its native protocol in plain PHP, with a PDO-style API. Its version is the turborel release it is made for; the alpha, 0.0.0, speaks protocol version 1.",
+    "version": "0.0.0",
+    "type": "library",
+    "license": "BSD-2-Clause-Patent",
+    "keywords": [
+        "turborel",
+        "database",
+        "sql",
+        "driver",
+        "pdo"
+    ],
+    "homepage": "https://github.com/turborel/turborel-php",
+    "support": {
+        "issues": "https://github.com/turborel/turborel-php/issues",
+        "source": "https://github.com/turborel/turborel-php",
+        "security": "https://github.com/turborel/turborel-php/security/policy"
+    },
+    "authors": [
+        {
+            "name": "Turborel Inc.",
+            "email": "hello@turborel.com",
+            "homepage": "https://turborel.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "ext-openssl": "*"
+    },
+    "suggest": {
+        "ext-bcmath": "Arithmetic on exact numbers, which the driver gives as strings",
+        "ext-zlib": "Compressed frames, the protocol's capability compression"
+    },
+    "require-dev": {
+        "ext-simplexml": "*",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.3",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.1",
+        "phpstan/phpstan-strict-rules": "^2.1",
+        "phpunit/phpunit": "^12.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Turborel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Turborel\\Tests\\": "tests/",
+            "Turborel\\Tools\\": "tools/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.0"
+        },
+        "sort-packages": true,
+        "allow-plugins": {},
+        "process-timeout": 0
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "verify": [
+            "@validate-strict",
+            "@format-check",
+            "@check",
+            "@analyse",
+            "@test"
+        ],
+        "validate-strict": "@composer validate --strict --no-check-version",
+        "format": "php-cs-fixer fix",
+        "format-check": "php-cs-fixer check --diff",
+        "check": "@php tools/run.php",
+        "analyse": "phpstan analyse --no-progress --memory-limit=1G",
+        "test": "phpunit",
+        "coverage": [
+            "phpunit --coverage-clover build/coverage/clover.xml --coverage-text",
+            "@php tools/run.php coverage build/coverage/clover.xml"
+        ],
+        "install-hooks": "git config core.hooksPath .githooks"
+    },
+    "scripts-descriptions": {
+        "verify": "Every check a change must pass: validate, format, the project's checks, static analysis and tests",
+        "validate-strict": "Validates composer.json strictly",
+        "format": "Formats the code to PER Coding Style 3.0",
+        "format-check": "Checks the code is formatted, showing what would change",
+        "check": "The project's own checks: sizes, comments, documentation and test citations",
+        "analyse": "Static analysis by PHPStan at level max with strict rules",
+        "test": "Runs the tests",
+        "coverage": "Runs the tests with coverage (pcov or Xdebug) and checks the floor",
+        "install-hooks": "Runs composer verify before every commit, once per clone"
+    },
+    "extra": {
+        "turborel": {
+            "release": "0.0.0",
+            "protocol-version": 1
+        }
+    },
+    "archive": {
+        "exclude": [
+            "/build",
+            "/vendor"
+        ]
+    }
+}
