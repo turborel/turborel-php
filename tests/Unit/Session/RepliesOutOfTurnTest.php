@@ -85,7 +85,8 @@ final class RepliesOutOfTurnTest extends CodecTestCase
     {
         [$wire, $server] = self::pair();
         fwrite($server, Frames::frame(Kind::SUSPENDED, ''));
-        fclose($server);
+        // Closed for writing alone, so Terminate is not refused by a reset.
+        stream_socket_shutdown($server, \STREAM_SHUT_WR);
         self::assertConnectionFails(static fn() => Ending::terminate($wire, 1.0));
         [$client, $server] = self::sockets();
         fwrite($server, Frames::frame(Kind::PONG, ''));

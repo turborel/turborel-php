@@ -71,12 +71,21 @@ final class Pki
         return $pki;
     }
 
-    /** A new key on P-256, OpenSSL configured by `$config`, as Windows' PHP needs it to be. */
+    /** A new key on P-256: under OpenSSL's own configuration, else under `$config`, where PHP finds none of OpenSSL's. */
     private static function key(string $config): \OpenSSLAsymmetricKey
     {
-        $key = openssl_pkey_new(['private_key_type' => \OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1', 'config' => $config]);
+        $options = ['private_key_type' => \OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1'];
+        $key = openssl_pkey_new($options);
         if (!$key instanceof \OpenSSLAsymmetricKey) {
-            throw new \RuntimeException('no key could be made: ' . openssl_error_string());
+            $key = openssl_pkey_new($options + ['config' => $config]);
+        }
+        if (!$key instanceof \OpenSSLAsymmetricKey) {
+            $errors = [];
+            while (($error = openssl_error_string()) !== false) {
+                $errors[] = $error;
+            }
+
+            throw new \RuntimeException('no key could be made: ' . implode('; ', $errors));
         }
 
         return $key;
