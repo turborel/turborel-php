@@ -102,15 +102,15 @@ From `doc/client/05-protocol.md`, The Native Protocol.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| P-FIELD-1 | `u8`, `u32` and `u64`, least significant byte first | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-2 | `i32 as u32` and `i64 as u64`, a signed number's bits in an unsigned field of its size | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-3 | `i128`, 16 bytes, two's complement, least significant first | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-4 | flag: `u8`, 0 or 1; any other byte fails the connection | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-5 | string: its length in bytes, `u32`, then its UTF-8 | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-6 | bytes: its length, `u32`, then the bytes | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-7 | list: its count, `u32`, then each item; strings, a list of strings | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-8 | key: 16 bytes, with no length before them | `[PROTOCOL Values and fields]` | not yet |
-| P-FIELD-9 | A count larger than what follows fails as the body runs out, reserving no memory for it | `[PROTOCOL Values and fields]` | not yet |
+| P-FIELD-1 | `u8`, `u32` and `u64`, least significant byte first | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-2 | `i32 as u32` and `i64 as u64`, a signed number's bits in an unsigned field of its size | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-3 | `i128`, 16 bytes, two's complement, least significant first | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-4 | flag: `u8`, 0 or 1; any other byte fails the connection | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-5 | string: its length in bytes, `u32`, then its UTF-8 | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-6 | bytes: its length, `u32`, then the bytes | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-7 | list: its count, `u32`, then each item; strings, a list of strings | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-8 | key: 16 bytes, with no length before them | `[PROTOCOL Values and fields]` | done |
+| P-FIELD-9 | A count larger than what follows fails as the body runs out, reserving no memory for it | `[PROTOCOL Values and fields]` | done |
 
 ### Data types
 

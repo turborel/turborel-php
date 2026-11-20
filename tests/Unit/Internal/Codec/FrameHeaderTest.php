@@ -7,9 +7,9 @@ namespace Turborel\Tests\Unit\Internal\Codec;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Turborel\Internal\Codec\FrameHeader;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
 
 /**
@@ -19,7 +19,7 @@ use Turborel\TurborelException;
 #[CoversClass(FrameHeader::class)]
 #[CoversClass(ConnectionFailure::class)]
 #[CoversClass(TurborelException::class)]
-final class FrameHeaderTest extends TestCase
+final class FrameHeaderTest extends CodecTestCase
 {
     /**
      * Verifies: [PROTOCOL Frames] [PROTOCOL A worked example]: a header is
@@ -85,7 +85,7 @@ final class FrameHeaderTest extends TestCase
         self::assertSame(FrameHeader::MAX_BODY, FrameHeader::decode($header)->length);
 
         $tooLong = (new FrameHeader(0x51, FrameHeader::MAX_BODY + 1))->encode();
-        self::assertConnectionFailure(static fn(): FrameHeader => FrameHeader::decode($tooLong));
+        self::assertConnectionFails(static fn(): FrameHeader => FrameHeader::decode($tooLong));
     }
 
     /**
@@ -98,7 +98,7 @@ final class FrameHeaderTest extends TestCase
     #[DataProvider('wrongLengths')]
     public function aHeaderOfTheWrongLengthFailsTheConnection(string $bytes): void
     {
-        self::assertConnectionFailure(static fn(): FrameHeader => FrameHeader::decode($bytes));
+        self::assertConnectionFails(static fn(): FrameHeader => FrameHeader::decode($bytes));
     }
 
     /**
@@ -124,7 +124,7 @@ final class FrameHeaderTest extends TestCase
     #[DataProvider('outOfRange')]
     public function aHeaderNoFrameCarriesIsRefused(int $kind, int $length): void
     {
-        self::assertConnectionFailure(static fn(): FrameHeader => new FrameHeader($kind, $length));
+        self::assertConnectionFails(static fn(): FrameHeader => new FrameHeader($kind, $length));
     }
 
     /**
@@ -140,22 +140,4 @@ final class FrameHeaderTest extends TestCase
         yield 'length past a u32' => [0x51, 0x1_0000_0000];
     }
 
-    /**
-     * Asserts that `$attempt` fails with the failure that loses the
-     * connection: SQLSTATE 08006, SQLCODE -919.
-     *
-     * @param \Closure(): mixed $attempt what must fail
-     */
-    private static function assertConnectionFailure(\Closure $attempt): void
-    {
-        try {
-            $attempt();
-        } catch (TurborelException $failure) {
-            self::assertSame(ConnectionFailure::SQLSTATE, $failure->getSqlState());
-            self::assertSame(ConnectionFailure::SQLCODE, $failure->getSqlCode());
-
-            return;
-        }
-        self::fail('expected the connection to fail');
-    }
 }
