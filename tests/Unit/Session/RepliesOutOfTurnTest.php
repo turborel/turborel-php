@@ -183,6 +183,37 @@ final class RepliesOutOfTurnTest extends CodecTestCase
     }
 
     /**
+     * Verifies: [PROTOCOL Values and fields] [CLIENT Running statements]:
+     * a reply holding a value the driver cannot take fails its statement
+     * with that value's error (SQLCODE -916), the rest of its replies read
+     * past first, and the connection goes on; a cursor's Description, the
+     * one reply of its request, is not read past; a frame cut short loses
+     * the connection.
+     *
+     * @throws TurborelException never from the replies after the failure
+     */
+    #[Test]
+    public function aValueTheDriverCannotTakeFailsItsStatementAlone(): void
+    {
+        [$wire, $server] = self::pair();
+        $badRow = Frames::frame(Kind::ROWS, self::writer()->u32(1)->u32(1)->raw("\x0E\x02")->bytesWritten());
+        $complete = Frames::frame(Kind::COMPLETE, self::writer()->u32(0)->string('00000')->flag(true)->bytesWritten());
+        $notice = Frames::frame(Kind::NOTICE, self::writer()->string('01000')->string('n')->bytesWritten());
+        fwrite($server, Frames::frame(Kind::DESCRIPTION, self::writer()->u32(0)->bytesWritten()) . $badRow . $badRow . $notice . $complete . Frames::frame(Kind::PONG, ''));
+        self::assertFailure('TB916', -916, static fn() => (new Querying($wire, false))->query('X'));
+        $wire->told->granted = [Capability::PING, Capability::DESCRIBE];
+        (new Control($wire))->ping();
+        self::assertSame([null, true, 1], [$wire->lost, $wire->active, \count($wire->told->notices)]);
+        $badColumn = Frames::frame(Kind::DESCRIPTION, self::writer()->u32(1)->flag(false)->raw("\x01\x01\x00\x00\x00\x02")->flag(false)->bytesWritten());
+        fwrite($server, $badColumn . Frames::frame(Kind::PONG, ''));
+        self::assertFailure('TB916', -916, static fn() => (new Preparing($wire, false))->describeCursor(new Statement(0, [], []), 0));
+        (new Control($wire))->ping();
+        fwrite($server, Frames::frame(Kind::ROWS, "\x01"));
+        self::assertConnectionFails(static fn() => (new Querying($wire, false))->query('X'));
+        self::assertNotNull($wire->lost);
+    }
+
+    /**
      * A Ready frame granting `$capabilities`.
      *
      * @param list<string> $capabilities

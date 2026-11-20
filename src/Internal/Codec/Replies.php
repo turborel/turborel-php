@@ -64,6 +64,20 @@ final class Replies
     }
 
     /**
+     * Whether a reply of `$kind` and `$body`, decoded or not, is the last its request is answered with, by the order of a
+     * statement's replies, as turborel's `ends_request` says: a Description, Rows, a Notice or a Status has more after it; a
+     * Complete has if its tail says more, read as `Completion::head` reads it; any other reply ends its request's.
+     */
+    public static function endsRequest(int $kind, string $body): bool
+    {
+        if (\in_array($kind, [Kind::DESCRIPTION, Kind::ROWS, Kind::NOTICE, Kind::STATUS], true)) {
+            return false;
+        }
+
+        return $kind !== Kind::COMPLETE || Completion::head($kind, $body)?->counts->more !== true;
+    }
+
+    /**
      * A Lob reply: 0 and its data, or 1 and its locator.
      *
      * @throws TurborelException SQLSTATE 08006 if it is neither

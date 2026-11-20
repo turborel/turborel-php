@@ -38,6 +38,25 @@ final class Connecting
     }
 
     /**
+     * The connection over `$wire`, a stream the program opened, as `$user` by `$mechanism`, its waits bounded as `$timeouts`
+     * say, if given, else as its maker set them.
+     *
+     * @throws TurborelException credentials refused, or SQLSTATE 08006 if the login fails or the stream cannot be bounded
+     */
+    public static function given(Wire $wire, string $user, Mechanism $mechanism, Offer $offer, ?Timeouts $timeouts): Connection
+    {
+        if ($timeouts !== null) {
+            $wire->stream->bound($timeouts->connect);
+        }
+        $connection = new Connection($wire, null, $timeouts, Login::logIn($wire, $user, $mechanism, $offer), $offer->compressFrom);
+        if ($timeouts !== null) {
+            $wire->stream->bound($timeouts->read);
+        }
+
+        return $connection;
+    }
+
+    /**
      * The connection over `$opened`, a stream, its TLS channel and the target it reached, as `$user` by `$mechanism`.
      *
      * @param array{Stream, ?TlsChannel, Target} $opened

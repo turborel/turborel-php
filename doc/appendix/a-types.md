@@ -40,7 +40,8 @@ and UUID's, 27, that of Turborel's RULES.md D184.
 A value's tag says how it is written, not its column's type: a CHARACTER
 VARYING value comes with tag 1, as a CHARACTER one does. The driver
 takes tags 5, 7, 10 and 12 as values too, as turborel-client does, and
-reads them as tags 1, 6, 9 and 11.
+reads them as tags 1, 6, 9 and 11, the value tags the protocol's page
+lists.
 
 An `u64` past PHP_INT_MAX, a large object's length for one, is the
 string of its digits. No exact number, decimal floating-point number or

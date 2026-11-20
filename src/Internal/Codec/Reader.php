@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Turborel\Internal\Codec;
 
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\ValueFailure;
 use Turborel\TurborelException;
 
 /**
@@ -42,18 +43,25 @@ final class Reader
     private int $depth = 0;
 
     /**
-     * A reader of `$bytes`, a received `$what`, as "reply", named in its failures.
+     * A reader of `$bytes`, a `$what`, as "reply", named in its failures: received, unless it is a value's own bytes within
+     * one, as a condition's.
      */
     public function __construct(
         private readonly string $bytes,
         private readonly string $what,
+        private readonly bool $received = true,
     ) {}
 
     /**
-     * The failure of a malformed message, saying where and `$why`.
+     * The failure of a malformed message, saying where and `$why`: of one received, the connection's (SQLSTATE 08006); of a
+     * value's own bytes within one, the value's (TB916), as turborel's Reader::corrupt gives them.
      */
     public function malformed(string $why): TurborelException
     {
+        if (!$this->received) {
+            return ValueFailure::corrupt("a stored {$this->what} is malformed at byte {$this->at}: {$why}");
+        }
+
         return ConnectionFailure::because("a {$this->what} received is malformed at byte {$this->at}: {$why}");
     }
 

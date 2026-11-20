@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Turborel\Internal\Codec;
 
 use Turborel\Internal\Codec\Json\Node;
+use Turborel\Internal\ValueFailure;
 use Turborel\TurborelException;
 use Turborel\Value\ArrayValue;
 use Turborel\Value\Binary;
@@ -34,12 +35,19 @@ use Turborel\Value\Xml;
  * CHARACTER VARYING value comes with tag 1; turborel's reader takes tags 5,
  * 7, 10 and 12 as their types' values too, and so does this one. It takes
  * tags 18 and 19 too, as large objects in their stored layout, which no
- * server sends; this one refuses them.
+ * server sends; this one refuses them as values it cannot take (TB916,
+ * RULES.md D8).
  *
  * @internal
  */
 final class ValueCodec
 {
+    /** The tag of a large object's stored form, which turborel's reader takes and no server sends. */
+    private const int STORED_LOB = 18;
+
+    /** The tag of a large object locator's stored form, which turborel's reader takes and no server sends. */
+    private const int STORED_LOB_LOCATOR = 19;
+
     /** The datetime values by their tags: each its moment. */
     private const array MOMENTS = [
         Tag::DATE => Moment::Date,
@@ -99,6 +107,7 @@ final class ValueCodec
             Tag::JSON => self::json($reader),
             Tag::XML => new Xml($reader->string()),
             Tag::UUID => self::uuid($reader),
+            self::STORED_LOB, self::STORED_LOB_LOCATOR => throw ValueFailure::corrupt("value tag {$tag} is a large object's stored form, never sent"),
             default => throw $reader->malformed("no value has the tag {$tag}"),
         };
     }
@@ -136,14 +145,14 @@ final class ValueCodec
     /**
      * A truth value: 0 false, 1 true.
      *
-     * @throws TurborelException SQLSTATE 08006 if it is neither
+     * @throws TurborelException SQLSTATE TB916 if it is neither, as turborel reads it; 08006 if it is cut short
      */
     private static function truth(Reader $reader): bool
     {
-        return match ($reader->u8()) {
+        return match ($byte = $reader->u8()) {
             0 => false,
             1 => true,
-            default => throw $reader->malformed('a truth value is neither 0 nor 1'),
+            default => throw ValueFailure::corrupt("{$byte} is not a truth value"),
         };
     }
 
@@ -229,20 +238,16 @@ final class ValueCodec
     /**
      * A JSON value's stored form, checked whole: of at most 256 MiB, nested at most 128 deep.
      *
-     * @throws TurborelException SQLSTATE 08006 if it is damaged, or past either limit
+     * @throws TurborelException SQLSTATE TB916 if it is damaged, 0A000 if past either limit, as turborel reads it; 08006 if cut short
      */
     private static function json(Reader $reader): Json
     {
         $length = $reader->u32();
         if ($length > Node::MAX_OCTETS) {
-            throw $reader->malformed("a JSON value's stored form is longer than 256 MiB");
+            throw ValueFailure::beyondJson('its stored form is longer than 256 MiB');
         }
-        $bytes = $reader->take($length);
-        try {
-            return new Json($bytes);
-        } catch (TurborelException $damaged) {
-            throw $reader->malformed($damaged->getMessage());
-        }
+
+        return new Json($reader->take($length));
     }
 
     /**

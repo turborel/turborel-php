@@ -156,7 +156,8 @@ final readonly class Preparing
     {
         $this->control->needs(Capability::DESCRIBE);
         $this->wire->send(new Describe($statement->number, $cursor));
-        $reply = $this->wire->receive();
+        // Its Description is its last reply, as no rows follow it.
+        $reply = $this->wire->receive(true);
         if ($reply instanceof Description) {
             return $reply->columns;
         }

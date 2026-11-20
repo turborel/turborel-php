@@ -52,13 +52,13 @@ The failures the driver raises itself:
 
 | SQLSTATE | SQLCODE | When |
 |---|---|---|
-| 08006 | -919 | The server not reached; TLS failing; a wait run out; a reply that cannot be read, or out of turn; a capability not granted |
+| 08006 | -919 | The server not reached; TLS failing; a wait run out; a reply's frame malformed, or a reply out of turn; a capability not granted |
 | 28000 | -919 | A secret over plain TCP; SCRAM's exchange refused |
 | 22003 | -301 | A number, or a field's value, out of its range |
 | 22021 | -301 | A string that is not UTF-8 |
 | 22032 | -301 | JSON text that does not parse |
-| TB916 | -916 | A JSON stored form that is damaged |
-| 0A000 | -900 | JSON past turborel's limits: nested more than 128 deep, or a stored form past 256 MiB |
+| TB916 | -916 | A value the driver cannot take: a JSON stored form that is damaged; of a reply, a truth or units byte not 0 or 1, a malformed condition, value tags 18 and 19, its statement failing alone, the connection kept |
+| 0A000 | -900 | JSON past turborel's limits: nested more than 128 deep, or a stored form past 256 MiB; of a reply, its statement failing alone |
 | 2200N | -301 | An XML value's text that is not well-formed content, as `nodes()` parses it |
 | 22000 | -301 | A PHP value the protocol has no value for |
 

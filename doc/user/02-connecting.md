@@ -129,9 +129,10 @@ echo $connection->setting('SESSION.TIME_ZONE'), PHP_EOL;
 
 `terminate` ends the session, its transaction committed or rolled back
 as SESSION.COMMIT_AT_END says, ON by default, and waits for the server
-to close, at most the read timeout, else 60 seconds. A commit that fails
-then, as of a deferred constraint not satisfied, gives its failure,
-SQLSTATE 40002.
+to close, at most the read timeout, else 60 seconds; on a stream the
+program opened, as the program bounded it. A commit that fails then, as
+of a deferred constraint not satisfied, gives its failure, SQLSTATE
+40002, any notice before it read past.
 
 `canceller()` gives what cancels the statement a connection runs: a new
 connection to the same server, made as the first was, which sends the

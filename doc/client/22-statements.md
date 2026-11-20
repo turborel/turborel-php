@@ -77,7 +77,8 @@ attributes every later Query and Execute carries.
 | 26000 | -921 | A statement that is no more |
 | 22003 | -301 | A row count or cursor number not a u32 |
 | 40002 | -913 | A commit under autocommit that fails |
-| 08006 | -919 | A capability not granted, before anything is sent; a reply out of turn, which loses the connection |
+| 08006 | -919 | A capability not granted, before anything is sent; a reply out of turn, or its frame malformed, which loses the connection |
+| TB916, 0A000 | -916, -900 | A reply holding a value the driver cannot take: the statement fails, the rest of its replies read past, the connection kept |
 
 A statement's own failures are the server's; [Appendix B](../appendix/b-errors.md)
 lists their classes.

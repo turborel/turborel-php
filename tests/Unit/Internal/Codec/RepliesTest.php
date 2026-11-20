@@ -173,13 +173,39 @@ final class RepliesTest extends CodecTestCase
      * a reply a client cannot read fails the connection (SQLCODE -919,
      * SQLSTATE 08006): a kind no reply has, a request's kind, a body cut
      * short, bytes after the last field, a tail tag out of order or not
-     * taken, a Lob reply of no kind, a condition with bytes after it.
+     * taken, a Lob reply of no kind.
      */
     #[Test]
     #[DataProvider('malformed')]
     public function aMalformedReplyFailsTheConnection(int $kind, string $body): void
     {
         self::assertConnectionFails(static fn(): mixed => Replies::decode($kind, self::hex($body)));
+    }
+
+    /**
+     * Verifies: [PROTOCOL Values and fields] [PROTOCOL Complete 'K']: a
+     * Complete whose condition has a byte after it fails as turborel reads
+     * a condition (SQLCODE -916), its head still read: its codes, whether
+     * a transaction is active, its position and whether more replies
+     * follow; a Description, Rows, a Notice or a Status has more after it,
+     * a Complete only if it says so, any other reply none.
+     */
+    #[Test]
+    public function aConditionThatCannotBeTakenLeavesItsHead(): void
+    {
+        $body = self::hex('00 00 00 00 05 00 00 00 30 30 30 30 30 01 04 07 00 00 00 00 00 00 00 05 11 01 00 00 00 13 00 00 00 00 00 00 00 05 00 00 00 30 30 30 30 30 00 00 00 00 00 00 FF');
+        self::assertFailure(ValueFailure::CORRUPT, ValueFailure::CORRUPT_CODE, static fn(): mixed => Replies::decode(Kind::COMPLETE, $body));
+        $head = Completion::head(Kind::COMPLETE, $body);
+        self::assertSame(['00000', true, 7, true], [$head?->sqlstate, $head?->active, $head?->counts->position, $head?->counts->more]);
+        self::assertNull(Completion::head(Kind::ROWS, $body));
+        self::assertNull(Completion::head(Kind::COMPLETE, self::hex('00 00')));
+        self::assertNull(Completion::head(Kind::COMPLETE, self::hex('00 00 00 00 05 00 00 00 30 30 30 30 30 00 04 07')));
+        self::assertFalse(Replies::endsRequest(Kind::COMPLETE, $body));
+        self::assertTrue(Replies::endsRequest(Kind::COMPLETE, self::hex('00 00 00 00 05 00 00 00 30 30 30 30 30 00')));
+        foreach ([Kind::DESCRIPTION, Kind::ROWS, Kind::NOTICE, Kind::STATUS] as $kind) {
+            self::assertFalse(Replies::endsRequest($kind, ''));
+        }
+        self::assertTrue(Replies::endsRequest(Kind::ERROR, ''));
     }
 
     /**
@@ -199,7 +225,6 @@ final class RepliesTest extends CodecTestCase
         yield 'a tag a Complete does not take' => [Kind::COMPLETE, "{$complete} 07 00 00 00 00"];
         yield 'a failure\'s tail tag 16' => [Kind::ERROR, '00 00 00 00 05 00 00 00 30 30 30 30 30 00 00 00 00 00 00 10'];
         yield 'a Lob reply of kind 2' => [Kind::LOB, '02'];
-        yield 'a condition with a byte after it' => [Kind::COMPLETE, "{$complete} 11 01 00 00 00 13 00 00 00 00 00 00 00 05 00 00 00 30 30 30 30 30 00 00 00 00 00 00 FF"];
         yield 'a flag of 2' => [Kind::COMPLETE, '00 00 00 00 05 00 00 00 30 30 30 30 30 02'];
     }
 

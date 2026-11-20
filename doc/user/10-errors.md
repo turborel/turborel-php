@@ -59,7 +59,11 @@ class 28 of SQLCODE -919. `endsConnection()` tells which, and
 `isLost()` whether a connection is lost; a lost connection fails every
 later request with the failure that lost it. The driver raises SQLSTATE
 08006, SQLCODE -919, when the server cannot be reached, a wait runs out,
-a reply cannot be read, or one comes out of turn.
+a reply's frame is malformed, or a reply comes out of turn. A reply
+whose frame is whole but holds a value the driver cannot take, as a
+damaged JSON value, fails its statement alone with that value's error,
+as SQLCODE -916, the rest of the statement's replies read past first,
+and the connection goes on.
 
 ## Warnings
 

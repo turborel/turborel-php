@@ -50,10 +50,10 @@ a prepared statement ([Statements and Cursors](22-statements.md)).
 | TB910 | -910 | A UUID made of other than 16 octets |
 | 22021 | -301 | A string, or a character large object, that is not UTF-8 |
 | 22032 | -301 | JSON text that does not parse, or JSON with no text, a datetime's |
-| TB916 | -916 | A JSON stored form that is damaged, or of another version |
+| TB916 | -916 | A JSON stored form that is damaged, or of another version; a value a server sent that the driver cannot take, as a truth byte not 0 or 1, or value tags 18 and 19, its statement failing alone |
 | 0A000 | -900 | JSON nested more than 128 deep, or a stored form past 256 MiB: turborel's limits |
 | 22000 | -301 | A PHP value no SQL value is, sent as a parameter |
-| 08006 | -919 | A value a server sent that cannot be read |
+| 08006 | -919 | A value a server sent whose frame is malformed: cut short, or bytes after its last field |
 
 ## EXAMPLES
 

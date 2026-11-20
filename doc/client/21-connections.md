@@ -13,7 +13,7 @@ session.
 final class Connection
 {
     public static function connect(Target $target, string $user, Mechanism $mechanism, ?Timeouts $timeouts = null, ?Offer $offer = null): self;
-    public static function open(mixed $stream, string $user, Mechanism $mechanism, ?Offer $offer = null): self;
+    public static function open(mixed $stream, string $user, Mechanism $mechanism, ?Offer $offer = null, ?Timeouts $timeouts = null): self;
     public function authorization(): string;
     public function server(): string;
     public function target(): ?Target;
@@ -47,10 +47,12 @@ seconds to connect and log in and no limit after by default, and asks
 for what its `Offer` asks, every capability but compression by default.
 
 `open` logs in over a stream the program opened. Its maker answers for
-its privacy and bounds its waits; of a TLS stream opened with the `ssl`
-option `capture_peer_cert`, `$scram->bind(TlsChannel::of($stream))`
-binds SCRAM-SHA-256-PLUS first. Such a connection has no target, so no
-canceller.
+its privacy and bounds its waits, Terminate's too, unless `$timeouts`
+are given: then the driver bounds the login's by `connect` and each
+after by `read`, and `setReadTimeout` changes it. Of a TLS stream opened
+with the `ssl` option `capture_peer_cert`,
+`$scram->bind(TlsChannel::of($stream))` binds SCRAM-SHA-256-PLUS first.
+Such a connection has no target, so no canceller.
 
 `authorization` and `server` give what Ready told: the session's
 authorization identifier and the server's product. `granted` lists the

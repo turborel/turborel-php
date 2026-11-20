@@ -15,6 +15,7 @@ use Turborel\Session\Connection;
 use Turborel\Session\Password;
 use Turborel\Session\Scram;
 use Turborel\Session\Target;
+use Turborel\Session\Timeouts;
 use Turborel\Session\Tls;
 use Turborel\Session\TlsChannel;
 use Turborel\Session\Trust;
@@ -162,9 +163,11 @@ final class ConnectingTest extends LiveTestCase
     }
 
     /**
-     * Verifies: [CLIENT Connecting]: a TLS stream the program opened is
-     * bound before SCRAM-SHA-256-PLUS, and logs in; such a connection has
-     * no canceller, and its maker bounds it.
+     * Verifies: [CLIENT Connecting] [CLIENT Timeouts]: a TLS stream the
+     * program opened is bound before SCRAM-SHA-256-PLUS, and logs in; such
+     * a connection has no canceller, and its maker bounds it, Terminate's
+     * wait too; opened within Timeouts, the driver bounds it as they say,
+     * its read timeout settable as a connection's.
      *
      * @throws TurborelException never, the stream being the server's
      */
@@ -181,6 +184,14 @@ final class ConnectingTest extends LiveTestCase
         self::assertSame(['BOB', null, null, null], [$connection->authorization(), $connection->canceller(), $connection->target(), $connection->readTimeout()]);
         self::assertConnectionFails(static fn() => $connection->setReadTimeout(1.0));
         $connection->terminate();
+        [$own] = Quietly::call(static fn(): mixed => stream_socket_client('unix://' . self::server()->socket(), $code, $message, 5.0));
+        self::assertIsResource($own);
+        $within = Connection::open($own, 'ann', new Trust(), null, new Timeouts(5.0, 2.0));
+        self::assertSame(2.0, $within->readTimeout());
+        $within->setReadTimeout(3.0);
+        self::assertSame([3.0, 'ANN'], [$within->readTimeout(), $within->authorization()]);
+        $within->query('VALUES 1');
+        $within->terminate();
     }
 
     /**

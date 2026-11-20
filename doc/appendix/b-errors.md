@@ -10,14 +10,14 @@ characters of the SQLSTATE are its class.
 
 | SQLSTATE | SQLCODE | Raised when | Ends the connection |
 |---|---|---|---|
-| 08006 | -919 | The server is not reached, TLS fails, a wait runs out, a reply cannot be read or comes out of turn, or the connection is lost; a capability not granted, more than 32 attributes or one past its bounds, a timeout of zero, or a certificate checked with no authority trusted, refused before anything is sent | yes, but of what is refused before anything is sent |
+| 08006 | -919 | The server is not reached, TLS fails, a wait runs out, a reply's frame is malformed or a reply comes out of turn, or the connection is lost; a capability not granted, more than 32 attributes or one past its bounds, a timeout of zero, or a certificate checked with no authority trusted, refused before anything is sent | yes, but of what is refused before anything is sent |
 | 28000 | -919 | A secret would go over plain TCP; SCRAM's exchange is refused | yes, of a login |
 | 22003 | -301 | A number, or a field's value, is out of its range | no |
 | 22018 | -301 | A UUID's text is not one, as turborel's CAST refuses it | no |
 | 22021 | -301 | A string is not UTF-8 | no |
 | 22032 | -301 | JSON text does not parse | no |
-| TB916 | -916 | A JSON stored form is damaged | no |
-| 0A000 | -900 | JSON is past turborel's limits, nested more than 128 deep or a stored form past 256 MiB | no |
+| TB916 | -916 | A JSON stored form is damaged; a reply holds a value the driver cannot take, a truth or units byte not 0 or 1, a malformed condition, value tags 18 and 19, its statement failing alone after the rest of its replies are read past | no |
+| 0A000 | -900 | JSON is past turborel's limits, nested more than 128 deep or a stored form past 256 MiB; of a reply, its statement failing alone | no |
 | 2200N | -301 | An XML value's text is not well-formed content | no |
 | 22000 | -301 | The protocol has no value for a PHP value | no |
 | TB910 | -910 | The program misused the API where turborel-client has no case of it: a request other than a copy's rows, its end or Ping while the copy is under way; a TCP port not one, a negative timeout, a cancel key or UUID not of 16 octets, or a delimiter of no use; a pooled connection asked for once given back; the standard interface's misuse, as a named parameter, an attribute not taken, or a transaction ended where none is | no |

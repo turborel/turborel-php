@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Session;
 
+use Turborel\Internal\Codec\Completion;
 use Turborel\Internal\Codec\FrameHeader;
 use Turborel\Internal\Codec\Frames;
 use Turborel\Internal\Codec\Replies;
@@ -103,20 +104,19 @@ final class Wire
     }
 
     /**
-     * The next reply but a Notice or a Status, which are taken on the way.
+     * The next reply but a Notice or a Status, which are taken on the way. A reply holding a value the driver cannot take
+     * fails with that value's error once the rest of its request's replies are read past, unless the request is answered by
+     * one reply alone (`$one`), and the connection goes on [PROTOCOL Values and fields].
      *
-     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or the reply cannot be read
+     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or a frame is malformed; TB916 or 0A000 of a value
+     *                           the driver cannot take
      */
-    public function receive(): Reply
+    public function receive(bool $one = false): Reply
     {
         while (true) {
-            $reply = $this->next();
-            if ($reply instanceof Notice) {
-                $this->told->notice(new PublicNotice($reply->sqlstate, $reply->message, $reply->diagnostics === null ? [] : $reply->diagnostics->fields));
-            } elseif ($reply instanceof Status) {
-                $this->told->settings[$reply->name] = $reply->value;
-            } else {
-                return $this->noted($reply);
+            $reply = $this->took($this->next($one));
+            if ($reply !== null) {
+                return $reply;
             }
         }
     }
@@ -147,23 +147,94 @@ final class Wire
     }
 
     /**
-     * The next frame read and decoded, inflated if it came compressed.
+     * The next frame decoded. One read whole that does not decode is malformed, which loses the connection, or holds a value
+     * the driver cannot take, which fails its request alone, read past with the rest of its replies unless `$one`, as
+     * turborel-client's `next_reply` does [PROTOCOL Values and fields].
      *
-     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or the frame cannot be read
+     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or the frame is malformed; the value's failure
      */
-    private function next(): Reply
+    private function next(bool $one): Reply
+    {
+        [$kind, $body] = $this->frame();
+        try {
+            return Replies::decode($kind, $body);
+        } catch (TurborelException $failure) {
+            $this->skipped($kind, $body, $failure);
+            if (!$one) {
+                $this->drained($kind, $body);
+            }
+
+            throw $failure;
+        }
+    }
+
+    /**
+     * The next frame's kind and body, inflated if it came compressed.
+     *
+     * @return array{int, string}
+     *
+     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or no frame whole comes, or its header or compression is malformed
+     */
+    private function frame(): array
     {
         if ($this->lost !== null) {
             throw $this->lost;
         }
         try {
             $header = FrameHeader::decode($this->stream->read(FrameHeader::SIZE), $this->maxBody);
-            $body = $this->stream->read($header->length);
-            [$kind, $body] = Frames::unwrap($header->kind, $body, $this->compressFrom !== null, $this->maxBody);
 
-            return Replies::decode($kind, $body);
+            return Frames::unwrap($header->kind, $this->stream->read($header->length), $this->compressFrom !== null, $this->maxBody);
         } catch (TurborelException $failure) {
             throw $this->lostBy($failure);
+        }
+    }
+
+    /** `$reply`, unless it is a Notice or a Status, which is taken; a statement's reply, its end noted. */
+    private function took(Reply $reply): ?Reply
+    {
+        if ($reply instanceof Notice) {
+            $this->told->notice(new PublicNotice($reply->sqlstate, $reply->message, $reply->diagnostics === null ? [] : $reply->diagnostics->fields));
+        } elseif ($reply instanceof Status) {
+            $this->told->settings[$reply->name] = $reply->value;
+        } else {
+            return $this->noted($reply);
+        }
+
+        return null;
+    }
+
+    /**
+     * Takes a frame of `$kind` and `$body` that did not decode, for `$failure`: the connection lost if it ends it, as a
+     * malformed frame's does; else, of a Complete, what its head says noted.
+     *
+     * @throws TurborelException `$failure`, if it ends the connection
+     */
+    private function skipped(int $kind, string $body, TurborelException $failure): void
+    {
+        if ($failure->endsConnection()) {
+            throw $this->lostBy($failure);
+        }
+        $head = Completion::head($kind, $body);
+        if ($head !== null) {
+            $this->noted(new Complete($head));
+        }
+    }
+
+    /**
+     * Reads past the rest of a request's replies once one, of `$kind` and `$body`, held a value the driver cannot take: up to
+     * the one that ends them, each taken as `receive` takes it, or skipped as that one was.
+     *
+     * @throws TurborelException SQLSTATE 08006 if the connection is lost before the last
+     */
+    private function drained(int $kind, string $body): void
+    {
+        while (!Replies::endsRequest($kind, $body)) {
+            [$kind, $body] = $this->frame();
+            try {
+                $this->took(Replies::decode($kind, $body));
+            } catch (TurborelException $failure) {
+                $this->skipped($kind, $body, $failure);
+            }
         }
     }
 

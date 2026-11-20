@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Codec;
 
+use Turborel\Internal\ValueFailure;
 use Turborel\TurborelException;
 use Turborel\Type\ApproximateType;
 use Turborel\Type\ArrayType;
@@ -92,11 +93,11 @@ final class TypeCodec
     /**
      * A length's units: 0 characters, 1 octets.
      *
-     * @throws TurborelException SQLSTATE 08006 if they are neither
+     * @throws TurborelException SQLSTATE TB916 if they are neither, as turborel reads them; 08006 if cut short
      */
     public static function units(Reader $reader): CharUnits
     {
-        return CharUnits::tryFrom($reader->u8()) ?? throw $reader->malformed('a length\'s units are neither characters nor octets');
+        return CharUnits::tryFrom($reader->u8()) ?? throw ValueFailure::corrupt('a length\'s units are neither characters nor octets');
     }
 
     /**

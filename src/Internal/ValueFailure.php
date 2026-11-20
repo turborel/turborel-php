@@ -74,6 +74,12 @@ final class ValueFailure
         return new TurborelException($message, self::INVALID_JSON, self::DATA);
     }
 
+    /** A value whose body a reader cannot take, as turborel's Code::Corrupt: `$message` says why. */
+    public static function corrupt(string $message): TurborelException
+    {
+        return new TurborelException($message, self::CORRUPT, self::CORRUPT_CODE);
+    }
+
     /** A JSON value's octets damaged: `$why` says how. */
     public static function damagedJson(string $why): TurborelException
     {

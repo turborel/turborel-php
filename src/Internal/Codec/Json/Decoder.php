@@ -20,8 +20,8 @@ use Turborel\Value\Moment;
  * once, as turborel checks a value it reads (its `binary::validate`).
  *
  * Damaged octets fail with SQLSTATE TB916, and nodes nested past 128 with
- * 0A000, never a guess; the value codec makes either a lost connection
- * when the octets came from the server (RULES.md D8).
+ * 0A000, never a guess; of octets the server sent, either fails the
+ * statement alone, as turborel-client fails it [PROTOCOL Values and fields].
  *
  * @internal
  */

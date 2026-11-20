@@ -43,6 +43,45 @@ final readonly class Completion
     }
 
     /**
+     * The head of a reply of `$kind` and `$body`, if it is a Complete whose head reads: its SQLCODE, SQLSTATE and whether a
+     * transaction is active, and of its tail the commit's position and whether more replies follow, which come before a
+     * condition a reader may fail to take; as turborel's `completed_head` reads it.
+     */
+    public static function head(int $kind, string $body): ?self
+    {
+        if ($kind !== Kind::COMPLETE) {
+            return null;
+        }
+        $reader = new Reader($body, 'reply');
+        try {
+            [$sqlcode, $sqlstate, $active] = [Wide::i32($reader->u32()), $reader->string(), $reader->flag()];
+        } catch (TurborelException) {
+            return null;
+        }
+        [$position, $more, $tail] = [null, false, new Tail()];
+        while (true) {
+            try {
+                $tag = $tail->next($reader, self::TAKEN);
+            } catch (TurborelException) {
+                break;
+            }
+            if ($tag === Tail::MORE) {
+                $more = true;
+            } elseif ($tag === Tail::POSITION) {
+                try {
+                    $position = $reader->u64();
+                } catch (TurborelException) {
+                    return null;
+                }
+            } else {
+                break;
+            }
+        }
+
+        return new self($sqlcode, $sqlstate, $active, new Counts($position, $more));
+    }
+
+    /**
      * The completion `$reader` reads next, its tail to the body's end.
      *
      * @throws TurborelException SQLSTATE 08006 if it is malformed
@@ -71,13 +110,13 @@ final readonly class Completion
      *
      * @return list<Failure>
      *
-     * @throws TurborelException SQLSTATE 08006 if one is malformed
+     * @throws TurborelException SQLSTATE TB916 if one is malformed, as turborel reads a condition; 08006 if the list is cut short
      */
     private static function conditions(Reader $reader): array
     {
         $conditions = [];
         for ($count = $reader->u32(); $count > 0; $count--) {
-            $inner = new Reader($reader->bytes(), 'condition');
+            $inner = new Reader($reader->bytes(), 'condition', false);
             $conditions[] = Failure::read($inner);
             $inner->finish();
         }

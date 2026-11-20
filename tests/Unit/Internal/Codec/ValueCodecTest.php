@@ -152,11 +152,10 @@ final class ValueCodecTest extends CodecTestCase
 
     /**
      * Verifies: [PROTOCOL Values] [PROTOCOL Frames]: a value a reader
-     * cannot take fails the connection: a tag of no value, a truth value
-     * of 2, a displacement past an i16, a DECFLOAT not in its one form, a
-     * large object of no kind or a character one not UTF-8, damaged JSON
-     * or JSON past 256 MiB, tags 18 and 19 of the server's stored form, a
-     * UUID not of 16 octets, a multiset past 65535 elements (RULES.md D8).
+     * cannot take fails the connection: a tag of no value, a displacement
+     * past an i16, a DECFLOAT not in its one form, a large object of no
+     * kind or a character one not UTF-8, a UUID not of 16 octets, a
+     * multiset past 65535 elements.
      */
     #[Test]
     #[DataProvider('malformed')]
@@ -166,24 +165,35 @@ final class ValueCodecTest extends CodecTestCase
     }
 
     /**
+     * Verifies: [PROTOCOL Values and fields] [DESIGN] D8: a value whose
+     * body turborel's reader cannot take fails with the value's own error,
+     * not of class 08, as turborel-client gives it: a truth value of 2 or
+     * damaged JSON with SQLCODE -916, JSON past 256 MiB with -900; tags 18
+     * and 19, the server's stored form, with -916.
+     */
+    #[Test]
+    public function aValueTheReaderCannotTakeFailsAsItself(): void
+    {
+        $refused = [['0E 02', ValueFailure::CORRUPT], ['19 01 00 00 00 01', ValueFailure::CORRUPT], ['19 01 00 00 10', ValueFailure::UNSUPPORTED],
+            ['12', ValueFailure::CORRUPT], ['13', ValueFailure::CORRUPT]];
+        foreach ($refused as [$bytes, $sqlState]) {
+            self::assertFailure($sqlState, $sqlState === ValueFailure::CORRUPT ? ValueFailure::CORRUPT_CODE : ValueFailure::UNSUPPORTED_CODE, static fn(): mixed => ValueCodec::read(self::reader(self::hex($bytes))));
+        }
+    }
+
+    /**
      * Values a reader must refuse.
      *
      * @return iterable<string, array{string}>
      */
     public static function malformed(): iterable
     {
-        yield 'tag 18, a type\'s alone' => ['12 00'];
         yield 'tag 28' => ['1C'];
-        yield 'a truth value of 2' => ['0E 02'];
         yield 'a displacement past an i16' => ['0B 00 00 00 00 01 00 00 00 00 00 00 00 00 00'];
         yield 'a DECFLOAT with a trailing zero' => ['0F 0A ' . str_repeat('00 ', 15) . '00 00 00 00'];
         yield 'a DECFLOAT out of range' => ['0F 01 ' . str_repeat('00 ', 15) . '01 18 00 00'];
         yield 'a large object of kind 2' => ['14 02 00 00 00 00'];
         yield 'a character large object not UTF-8' => ['14 00 01 00 00 00 FF'];
-        yield 'damaged JSON' => ['19 01 00 00 00 01'];
-        yield 'JSON past 256 MiB' => ['19 01 00 00 10'];
-        yield 'tag 18, a stored large object' => ['12'];
-        yield 'tag 19, a stored large object' => ['13'];
         yield 'a UUID of 15 octets' => ['1B 0F 00 00 00 ' . str_repeat('00 ', 15)];
         yield 'a multiset past 65535 elements' => ['16 00 00 01 00 ' . str_repeat('00 ', 65_536)];
         yield 'an array\'s count past its body' => ['10 FF FF FF FF'];

@@ -91,20 +91,20 @@ final class Connection
     /**
      * Logs in over `$stream`, a stream the program opened, connected to a
      * server, as `$user`, proved by `$mechanism`, asking what `$offer` asks
-     * [CLIENT Connecting]. Its maker answers for its privacy and bounds its
-     * waits; of a TLS stream, bind SCRAM first by `$mechanism->bind(TlsChannel::of($stream))`.
-     * It cannot be reached again, so has no canceller.
+     * [CLIENT Connecting]. Its maker answers for its privacy; of a TLS
+     * stream, bind SCRAM first by `$mechanism->bind(TlsChannel::of($stream))`.
+     * Its waits, Terminate's too, are as its maker set them, unless
+     * `$timeouts` are given: then the driver bounds the login's by
+     * `connect` and each after by `read`, settable as a connection's
+     * [CLIENT Timeouts]. It cannot be reached again, so has no canceller.
      *
      * @param resource $stream
      *
-     * @throws TurborelException credentials refused, or SQLSTATE 08006 if the login fails
+     * @throws TurborelException credentials refused, or SQLSTATE 08006 if the login fails or the stream cannot be bounded
      */
-    public static function open(mixed $stream, string $user, Mechanism $mechanism, ?Offer $offer = null): self
+    public static function open(mixed $stream, string $user, Mechanism $mechanism, ?Offer $offer = null, ?Timeouts $timeouts = null): self
     {
-        $offer ??= new Offer();
-        $wire = new Wire(new Stream($stream));
-
-        return new self($wire, null, null, Login::logIn($wire, $user, $mechanism, $offer), $offer->compressFrom);
+        return Connecting::given(new Wire(new Stream($stream)), $user, $mechanism, $offer ?? new Offer(), $timeouts);
     }
 
     /** The session's authorization identifier, as Ready told it: the user it logged in as. */
@@ -547,14 +547,16 @@ final class Connection
 
     /**
      * Ends the session, its transaction as SESSION.COMMIT_AT_END says, and
-     * waits for the server to close, at most the read timeout, else 60
-     * seconds; a commit that fails then gives its failure [CLIENT Connecting].
+     * waits for the server to close: at most the read timeout, else 60
+     * seconds, on a stream the driver bounds; as its maker set it on a
+     * stream given to `open`. A Notice or a Status before it is read past,
+     * and a commit that fails gives its failure [CLIENT Connecting].
      *
      * @throws TurborelException the failing commit's failure, or SQLSTATE 08006 if the server answers otherwise
      */
     public function terminate(): void
     {
-        Ending::terminate($this->wire, $this->timeouts === null ? Timeouts::TERMINATE_WITHIN : ($this->timeouts->read ?? Timeouts::TERMINATE_WITHIN));
+        Ending::terminate($this->wire, $this->timeouts === null ? null : ($this->timeouts->read ?? Timeouts::TERMINATE_WITHIN));
     }
 
     /** The prepared statements of the session. */

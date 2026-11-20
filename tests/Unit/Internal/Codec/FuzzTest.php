@@ -48,9 +48,9 @@ final class FuzzTest extends CodecTestCase
 
     /**
      * Verifies: [PROTOCOL Errors and notices] [PROTOCOL Frames]: whatever a
-     * reply's body holds, the decoder gives a reply or fails the connection
-     * (SQLCODE -919, SQLSTATE 08006), never another failure, a PHP error
-     * or a warning.
+     * reply's body holds, the decoder gives a reply, fails the connection
+     * (SQLCODE -919, SQLSTATE 08006), or fails as a value it cannot take
+     * (TB916 or 0A000), never another failure, a PHP error or a warning.
      */
     #[Test]
     public function randomBodiesGiveAReplyOrFailTheConnection(): void
@@ -67,8 +67,8 @@ final class FuzzTest extends CodecTestCase
     /**
      * Verifies: [PROTOCOL Errors and notices] [PROTOCOL Values]: well formed
      * Rows, Prepared and Complete replies with one byte changed, or cut
-     * short at any byte, are read or fail the connection, never anything
-     * else.
+     * short at any byte, are read, fail the connection, or fail as a value
+     * the reader cannot take, never anything else.
      *
      * @throws TurborelException never from writing the well formed bodies
      */
@@ -104,7 +104,8 @@ final class FuzzTest extends CodecTestCase
             Replies::decode($kind, $body);
             $this->addToAssertionCount(1);
         } catch (TurborelException $failure) {
-            self::assertSame([ConnectionFailure::SQLSTATE, ConnectionFailure::SQLCODE], [$failure->getSqlState(), $failure->getSqlCode()], $failure->getMessage());
+            $allowed = [[ConnectionFailure::SQLSTATE, ConnectionFailure::SQLCODE], [ValueFailure::CORRUPT, ValueFailure::CORRUPT_CODE], [ValueFailure::UNSUPPORTED, ValueFailure::UNSUPPORTED_CODE]];
+            self::assertContains([$failure->getSqlState(), $failure->getSqlCode()], $allowed, $failure->getMessage());
         } finally {
             restore_error_handler();
         }

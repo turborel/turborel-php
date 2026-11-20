@@ -25,15 +25,18 @@ use Turborel\TurborelException;
 final class Ending
 {
     /**
-     * Ends the session over `$wire`, waiting at most `$within` seconds for the server to close.
+     * Ends the session over `$wire`, waiting at most `$within` seconds for the server to close, or as its stream's maker set
+     * it if none.
      *
      * @throws TurborelException the failing commit's failure, or SQLSTATE 08006 if the server answers otherwise
      */
-    public static function terminate(Wire $wire, float $within): void
+    public static function terminate(Wire $wire, ?float $within): void
     {
         $wire->send(new Terminate());
         try {
-            $wire->stream->bound($within);
+            if ($within !== null) {
+                $wire->stream->bound($within);
+            }
             $rest = $wire->stream->rest($wire->maxBody + FrameHeader::SIZE);
         } finally {
             $wire->lostBy(ConnectionFailure::because('the session was terminated'));
