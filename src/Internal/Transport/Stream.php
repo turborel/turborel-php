@@ -49,6 +49,7 @@ final class Stream
         if ($this->pipe) {
             return;
         }
+        $this->open('bound how long the connection waits');
         $seconds = $within === null ? self::UNBOUNDED : (int) floor($within);
         $micros = $within === null ? 0 : (int) round(($within - floor($within)) * self::MICROS);
         [$set] = Quietly::call(fn(): bool => stream_set_timeout($this->resource, $seconds, $micros));
@@ -64,6 +65,7 @@ final class Stream
      */
     public function write(string $bytes): void
     {
+        $this->open('send');
         for ($at = 0; $at < \strlen($bytes); $at += $written) {
             [$written, $warning] = Quietly::call(fn(): int|false => fwrite($this->resource, substr($bytes, $at)));
             if (!\is_int($written) || $written === 0) {
@@ -80,6 +82,7 @@ final class Stream
      */
     public function read(int $count): string
     {
+        $this->open('receive');
         $bytes = '';
         while (\strlen($bytes) < $count) {
             $want = min(self::CHUNK, $count - \strlen($bytes));
@@ -100,6 +103,7 @@ final class Stream
      */
     public function rest(int $most): string
     {
+        $this->open('receive');
         $bytes = '';
         while (\strlen($bytes) < $most && !feof($this->resource)) {
             $want = max(1, min(self::CHUNK, $most - \strlen($bytes)));
@@ -164,5 +168,17 @@ final class Stream
         }
 
         return ConnectionFailure::because("cannot {$what}: " . ($warning ?? 'the connection failed'));
+    }
+
+    /**
+     * That the stream is open, to `$what`.
+     *
+     * @throws TurborelException SQLSTATE 08006 if it was closed
+     */
+    private function open(string $what): void
+    {
+        if (!\is_resource($this->resource)) {
+            throw ConnectionFailure::because("cannot {$what}: the connection is closed");
+        }
     }
 }
