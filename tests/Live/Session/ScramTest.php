@@ -12,6 +12,7 @@ use Turborel\Session\ChannelBinding;
 use Turborel\Session\Connection;
 use Turborel\Session\KeyCache;
 use Turborel\Session\Scram;
+use Turborel\Session\Trust;
 use Turborel\Tests\Server\LiveServer;
 use Turborel\Tests\Support\LiveTestCase;
 use Turborel\TurborelException;
@@ -46,8 +47,9 @@ final class ScramTest extends LiveTestCase
     }
 
     /**
-     * Verifies: [CLIENT TLS by mode] [PROTOCOL Mechanisms]: binding required
-     * over TLS binds by `tls-server-end-point`; over a socket, which binds
+     * Verifies: [CLIENT TLS by mode] [CLIENT Connecting] [PROTOCOL Mechanisms]:
+     * binding required over TLS 1.3 binds by `tls-server-end-point`, PHP's
+     * streams exporting no keying material (RULES.md D8); over a socket, which binds
      * nothing, it refuses the exchange (SQLSTATE 28000); disabled over TLS,
      * the exchange is SCRAM-SHA-256, unbound, and the server takes it.
      *
@@ -57,8 +59,11 @@ final class ScramTest extends LiveTestCase
     public function bindingIsAsItsModeSays(): void
     {
         $required = (new Scram(LiveServer::BOB_PASSWORD))->channelBinding(ChannelBinding::Require);
-        Connection::connect(self::tls(), 'bob', $required)->terminate();
+        $bound = Connection::connect(self::tls(), 'bob', $required);
+        self::assertSame(['TLSv1.3', 'BOB'], [$bound->wire()->stream->tlsProtocol(), $bound->authorization()]);
+        $bound->terminate();
         self::assertSame(Scram::NAME_PLUS, $required->name());
+        self::assertNull(Connection::connect(self::tcp(), 'ann', new Trust())->wire()->stream->tlsProtocol());
         $refused = (new Scram(LiveServer::BOB_PASSWORD))->channelBinding(ChannelBinding::Require);
         self::assertFailure(ConnectionFailure::REFUSED, ConnectionFailure::SQLCODE, static fn(): Connection => Connection::connect(self::socket(), 'bob', $refused));
         $disabled = (new Scram(LiveServer::BOB_PASSWORD))->channelBinding(ChannelBinding::Disable);

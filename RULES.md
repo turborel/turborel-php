@@ -461,6 +461,14 @@ each such case is listed here for the reference to be fixed:
   session as Reset does, so the transaction is rolled back; turborel-client
   keeps its flag of an active transaction as it was.
 
+Where PHP cannot do what turborel-client does, the driver does as
+turborel's owner decided (2026-11-19):
+
+- SCRAM-SHA-256-PLUS binds by `tls-server-end-point` over TLS 1.2 and
+  1.3 alike, where turborel-client binds by `tls-exporter` over TLS 1.3.
+  PHP's openssl extension exports no keying material; the server takes
+  `tls-server-end-point` over either version (D1).
+
 ### This driver's own
 
 #### D9. Internals live under `Turborel\Internal`

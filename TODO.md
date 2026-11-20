@@ -9,19 +9,11 @@ in [RULES.md](RULES.md).
 
 Code never cites this file (R-DOC-5).
 
-[M2 Connect](#m2-connect) ·
 [M4 Large objects and bulk](#m4-large-objects-and-bulk) ·
 [M5 Settings](#m5-settings) · [M6 Throughput](#m6-throughput) ·
 [M7 Standard API](#m7-standard-api) · [M8 Parity audit](#m8-parity-audit)
 
 ---
-
-## M2 Connect
-
-- `tls-exporter`: C-CONN-6 and P-MECH-6. PHP's openssl extension exports
-  no keying material, so SCRAM-SHA-256-PLUS binds by
-  `tls-server-end-point` over TLS 1.3 too, which the server takes
-  (RULES.md D1); the owner decides how these rows are met.
 
 ## M4 Large objects and bulk
 

@@ -130,6 +130,15 @@ final class Stream
         return \is_int($ready) && $ready > 0;
     }
 
+    /** The TLS protocol the stream speaks, as `TLSv1.3`; none of a stream TLS does not secure. */
+    public function tlsProtocol(): ?string
+    {
+        if (!\is_resource($this->resource)) {
+            return null;
+        }
+        return stream_get_meta_data($this->resource)['crypto']['protocol'] ?? null;
+    }
+
     /** Closes the stream, if it is open. */
     public function close(): void
     {
