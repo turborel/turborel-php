@@ -1,0 +1,215 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Turborel\Tests\Live\Statements;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNamespace;
+use PHPUnit\Framework\Attributes\Test;
+use Turborel\Internal\Codec\Reply\Error;
+use Turborel\Internal\Codec\Request\Prepare;
+use Turborel\Session\Capability;
+use Turborel\Session\Connection;
+use Turborel\Session\Defaults;
+use Turborel\Session\Offer;
+use Turborel\Session\Trust;
+use Turborel\Statements\Batch;
+use Turborel\Tests\Support\LiveTestCase;
+use Turborel\TurborelException;
+use Turborel\Type\CharacterType;
+use Turborel\Type\Column;
+use Turborel\Type\ExactType;
+use Turborel\Value\Exact;
+
+/**
+ * Prepared statements on a live server: prepared once and executed with
+ * values, their cursors opened, fetched and closed, described again, and
+ * deallocated.
+ */
+#[CoversNamespace('Turborel\Session')]
+#[CoversNamespace('Turborel\Internal')]
+#[CoversNamespace('Turborel\Statements')]
+#[CoversNamespace('Turborel\Value')]
+#[CoversNamespace('Turborel\Type')]
+#[CoversClass(TurborelException::class)]
+final class PreparingTest extends LiveTestCase
+{
+    /**
+     * Verifies: [CLIENT Prepared statements] [PROTOCOL Prepare 'P']
+     * [PROTOCOL Prepared 'P'] [PROTOCOL Execute 'E']: a statement is
+     * prepared once, its parameters written `?`, the type each takes and a
+     * query's columns given; executed with values as many times as wanted,
+     * across transactions; values not one for each parameter fail
+     * (SQLSTATE 07001).
+     *
+     * @throws TurborelException never from the statements that succeed
+     */
+    #[Test]
+    public function aStatementIsPreparedOnceAndExecutedOften(): void
+    {
+        $connection = self::staff('P_STAFF');
+        $byId = $connection->prepare('SELECT NAME FROM P_STAFF WHERE ID = ?');
+        self::assertCount(1, $byId->parameters);
+        self::assertInstanceOf(ExactType::class, $byId->parameters[0]->type);
+        self::assertSame(['NAME'], array_map(static fn(Column $column): ?string => $column->name, $byId->columns));
+        self::assertInstanceOf(CharacterType::class, $byId->columns[0]->type ?? null);
+        self::assertSame([['Grace']], $connection->execute($byId, [2])->rows);
+        $connection->query('COMMIT');
+        self::assertSame([['Ada']], $connection->execute($byId, [new Exact('1', 0)])->rows);
+        $connection->query('ROLLBACK');
+        $insert = $connection->prepare('INSERT INTO P_STAFF VALUES (?, ?)');
+        self::assertSame([], $insert->columns);
+        $done = $connection->execute($insert, [9, 'Edsger']);
+        self::assertSame([false, 0, 1], [$done->isRows(), $done->completed?->sqlcode(), $done->completed?->rows()]);
+        self::assertFailure('07001', -921, static fn() => $connection->execute($insert, [10]));
+        $connection->terminate();
+    }
+
+    /**
+     * Verifies: [CLIENT Prepared statements] [PROTOCOL Execute 'E']
+     * [PROTOCOL Fetch 'F'] [PROTOCOL Close 'C'] [PROTOCOL Suspended 'S']:
+     * a cursor is opened and gives its first rows, then Suspended while it
+     * has more; a fetch gives the next batch, the last ending it with a
+     * Complete; a cursor already open, or not open, fails (SQLSTATE 24000).
+     *
+     * @throws TurborelException never from the statements that succeed
+     */
+    #[Test]
+    public function aCursorIsReadABatchAtATime(): void
+    {
+        $connection = self::staff('P_CURSOR');
+        $all = $connection->prepare('SELECT ID FROM P_CURSOR ORDER BY ID');
+        self::assertSame([['1'], true], self::read($connection->openCursor($all, [], 1)));
+        self::assertFailure('24000', -501, static fn() => $connection->openCursor($all));
+        self::assertSame([['2'], true], self::read($connection->fetch($all, 1)));
+        self::assertSame([['3'], false], self::read($connection->fetch($all)));
+        self::assertFailure('24000', -501, static fn() => $connection->fetch($all));
+        $connection->openCursor($all, [], 1);
+        $connection->close($all);
+        self::assertFailure('24000', -501, static fn() => $connection->close($all));
+        $connection->terminate();
+    }
+
+    /**
+     * Verifies: [CLIENT Controlling the session] [PROTOCOL Execute 'E']
+     * [PROTOCOL Describe 'Y'] [PROTOCOL Description 'D'] [PROTOCOL Capabilities]:
+     * granted `cursors`, a statement has several numbered cursors open at
+     * once; granted `describe`, an open cursor's columns are described, and
+     * the statement again; neither granted, they fail before anything is
+     * sent.
+     *
+     * @throws TurborelException never from the statements that succeed
+     */
+    #[Test]
+    public function numberedCursorsAreOpenAtOnceAndDescribed(): void
+    {
+        $connection = self::staff('P_NUMBERED');
+        $all = $connection->prepare('SELECT ID, NAME FROM P_NUMBERED ORDER BY ID');
+        self::assertSame([['1'], true], self::read($connection->openCursor($all, [], 1, 1)));
+        self::assertSame([['1'], true], self::read($connection->openCursor($all, [], 1, 2)));
+        self::assertSame([['2'], true], self::read($connection->fetch($all, 1, 1)));
+        self::assertSame(['ID', 'NAME'], array_map(static fn(Column $column): ?string => $column->name, $connection->describeCursor($all, 2)));
+        $connection->close($all, 1);
+        self::assertSame([['2'], true], self::read($connection->fetch($all, 1, 2)));
+        $connection->close($all, 2);
+        self::assertFailure('24000', -501, static fn() => $connection->describeCursor($all, 2));
+        $again = $connection->describe($all);
+        self::assertEquals([$all->number, $all->parameters, $all->columns], [$again->number, $again->parameters, $again->columns]);
+        $connection->terminate();
+        $without = Connection::connect(self::tcp(), 'ann', new Trust(), null, new Offer(array_values(array_diff(Defaults::CAPABILITIES, [Capability::CURSORS, Capability::DESCRIBE]))));
+        $one = $without->prepare('VALUES 1');
+        self::assertConnectionFails(static fn() => $without->openCursor($one, [], 0, 1));
+        self::assertConnectionFails(static fn() => $without->describe($one));
+        self::assertSame([['1'], false], self::read($without->openCursor($one)));
+        $without->terminate();
+    }
+
+    /**
+     * Verifies: [CLIENT Prepared statements] [PROTOCOL Deallocate 'D']
+     * [PROTOCOL Prepare 'P'] [PROTOCOL Describe 'Y']: a statement whose
+     * cursor is open is neither deallocated nor replaced (SQLSTATE 24000);
+     * deallocated, it is no more (SQLSTATE 26000).
+     *
+     * @throws TurborelException never from the statements that succeed
+     */
+    #[Test]
+    public function aStatementIsDeallocatedOnceItsCursorIsClosed(): void
+    {
+        $connection = self::staff('P_GONE');
+        $all = $connection->prepare('SELECT ID FROM P_GONE');
+        $connection->openCursor($all, [], 1);
+        self::assertFailure('24000', -501, static fn() => $connection->deallocate($all));
+        $connection->send(new Prepare($all->number, 'VALUES 1'));
+        $replaced = $connection->receive();
+        self::assertInstanceOf(Error::class, $replaced);
+        self::assertSame('24000', $replaced->failure->sqlstate);
+        $connection->close($all);
+        $connection->deallocate($all);
+        self::assertFailure('26000', -921, static fn() => $connection->describe($all));
+        self::assertFailure('26000', -921, static fn() => $connection->deallocate($all));
+        $connection->terminate();
+    }
+
+    /**
+     * Verifies: [CLIENT What the server tells] [PROTOCOL Execute 'E']
+     * [PROTOCOL Fetch 'F'] [PROTOCOL Conversations] [PROTOCOL Capabilities]:
+     * under autocommit, granted `fetch-ends`, a cursor's transaction ends as
+     * it does: the fetch of its last row commits, and so does its close;
+     * not granted, the transaction outlasts it.
+     *
+     * @throws TurborelException never from the statements
+     */
+    #[Test]
+    public function underAutocommitACursorsTransactionEndsWithIt(): void
+    {
+        $connection = self::staff('P_ENDS');
+        $connection->query('COMMIT');
+        $connection->setAutocommit(true);
+        $all = $connection->prepare('SELECT ID FROM P_ENDS');
+        $connection->openCursor($all, [], 1);
+        self::assertTrue($connection->inTransaction());
+        $connection->fetch($all);
+        self::assertFalse($connection->inTransaction());
+        $connection->openCursor($all, [], 1);
+        $connection->close($all);
+        self::assertFalse($connection->inTransaction());
+        $connection->terminate();
+        $without = Connection::connect(self::tcp(), 'ann', new Trust(), null, new Offer(array_values(array_diff(Defaults::CAPABILITIES, [Capability::FETCH_ENDS]))));
+        $without->setAutocommit(true);
+        $again = $without->prepare('SELECT ID FROM P_ENDS');
+        $without->openCursor($again, [], 1);
+        $without->fetch($again);
+        self::assertTrue($without->inTransaction());
+        $without->terminate();
+    }
+
+    /**
+     * A connection as ANN in which `$table` holds Ada, Grace and Barbara, numbered 1 to 3.
+     *
+     * @throws TurborelException if it cannot be made
+     */
+    private static function staff(string $table): Connection
+    {
+        $connection = self::owner();
+        $connection->query("CREATE TABLE {$table} (ID INTEGER, NAME VARCHAR(20))");
+        $connection->query("INSERT INTO {$table} VALUES (1, 'Ada'), (2, 'Grace'), (3, 'Barbara')");
+
+        return $connection;
+    }
+
+    /**
+     * The first value of each row of `$batch`, an exact number's units, and whether the cursor has more.
+     *
+     * @return array{list<string>, bool}
+     */
+    private static function read(Batch $batch): array
+    {
+        return [array_map(static function (array $row): string {
+            $value = $row[0] ?? null;
+            self::assertInstanceOf(Exact::class, $value);
+
+            return $value->units;
+        }, $batch->rows), $batch->more];
+    }
+}

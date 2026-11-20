@@ -15,11 +15,19 @@ use Turborel\Internal\ConnectionFailure;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Ending;
 use Turborel\Internal\Session\Wire;
+use Turborel\Internal\Statements\Preparing;
 use Turborel\Internal\Statements\Querying;
 use Turborel\Internal\Transport\Opener;
 use Turborel\Internal\Transport\Stream;
+use Turborel\Statements\Batch;
+use Turborel\Statements\Completed;
 use Turborel\Statements\Outcome;
+use Turborel\Statements\Ran;
+use Turborel\Statements\Sink;
+use Turborel\Statements\Statement;
+use Turborel\Statements\Streamed;
 use Turborel\TurborelException;
+use Turborel\Type\Column;
 
 /**
  * A connection to a server, and its session, as turborel-client's
@@ -214,6 +222,183 @@ final class Connection
     }
 
     /**
+     * Runs `$sql` as `query` does, a query's columns and rows given to `$sink` as they come, so no more than a batch is held.
+     *
+     * @throws TurborelException the statement's failure, after some rows went to `$sink` too, or SQLSTATE 08006
+     */
+    public function queryInto(string $sql, Sink $sink): Streamed
+    {
+        return (new Querying($this->wire, $this->autocommit))->into($sql, $sink);
+    }
+
+    /**
+     * Runs `$sql`, several statements, as one request: each in order, each its own transaction under autocommit, until one fails [CLIENT Controlling the session].
+     *
+     * @throws TurborelException SQLSTATE 08006 if `multi-statement` was not granted, or the connection is lost
+     */
+    public function queryMany(string $sql): Ran
+    {
+        return (new Querying($this->wire, $this->autocommit))->many($sql);
+    }
+
+    /**
+     * Prepares `$sql` once, its dynamic parameters written `?` [CLIENT Prepared statements].
+     *
+     * @throws TurborelException the server's, as SQLSTATE 37000 of a statement not preparable, or SQLSTATE 08006
+     */
+    public function prepare(string $sql): Statement
+    {
+        return $this->preparing()->prepare($sql);
+    }
+
+    /**
+     * Executes `$statement` with `$values`, one for each `?`: a query's rows, all of them, or another statement's completion.
+     *
+     * @param list<mixed> $values
+     *
+     * @throws TurborelException the statement's failure, as SQLSTATE 07001 of values not one for each `?`, or SQLSTATE 08006
+     */
+    public function execute(Statement $statement, array $values = []): Outcome
+    {
+        return $this->preparing()->execute($statement, $values);
+    }
+
+    /**
+     * Opens the cursor `$cursor` of `$statement`, a query, with `$values`, and gives its first `$rows` rows, all if 0.
+     * Under autocommit, granted `fetch-ends`, the transaction ends as the cursor does; a cursor other than 0 needs `cursors`.
+     *
+     * @param list<mixed> $values
+     *
+     * @throws TurborelException the server's, as SQLSTATE 24000 if the cursor is open, or SQLSTATE 08006
+     */
+    public function openCursor(Statement $statement, array $values = [], int $rows = 0, int $cursor = 0): Batch
+    {
+        return $this->preparing()->open($statement, $values, $rows, $cursor);
+    }
+
+    /**
+     * The next `$rows` rows of the cursor `$cursor` of `$statement`, all if 0.
+     *
+     * @throws TurborelException the server's, as SQLSTATE 24000 if the cursor is not open, or SQLSTATE 08006
+     */
+    public function fetch(Statement $statement, int $rows = 0, int $cursor = 0): Batch
+    {
+        return $this->preparing()->fetch($statement, $rows, $cursor);
+    }
+
+    /**
+     * Closes the cursor `$cursor` of `$statement`.
+     *
+     * @throws TurborelException the server's, as SQLSTATE 24000 if it is not open, or SQLSTATE 08006
+     */
+    public function close(Statement $statement, int $cursor = 0): void
+    {
+        $this->preparing()->close($statement, $cursor);
+    }
+
+    /**
+     * `$statement` described again by the server, as it is now, with `describe` [CLIENT Controlling the session].
+     *
+     * @throws TurborelException the server's, as SQLSTATE 26000 if it is no more, or SQLSTATE 08006
+     */
+    public function describe(Statement $statement): Statement
+    {
+        return $this->preparing()->describe($statement);
+    }
+
+    /**
+     * The columns of the open cursor `$cursor` of `$statement`, with `describe`.
+     *
+     * @return list<Column>
+     *
+     * @throws TurborelException the server's, as SQLSTATE 24000 if it is not open, or SQLSTATE 08006
+     */
+    public function describeCursor(Statement $statement, int $cursor = 0): array
+    {
+        return $this->preparing()->describeCursor($statement, $cursor);
+    }
+
+    /**
+     * Destroys `$statement`, of no use after.
+     *
+     * @throws TurborelException the server's, as SQLSTATE 24000 if its cursor is open, or SQLSTATE 08006
+     */
+    public function deallocate(Statement $statement): void
+    {
+        $this->preparing()->deallocate($statement);
+    }
+
+    /**
+     * Hands each notice the server sends from now on to `$handler`, as it comes; none, they are kept [CLIENT What the server tells].
+     *
+     * @param (\Closure(Notice): void)|null $handler
+     */
+    public function setNoticeHandler(?\Closure $handler): void
+    {
+        $this->wire->told->handler = $handler;
+    }
+
+    /**
+     * The notices kept, the last 64 that came with no handler set, taken.
+     *
+     * @return list<Notice>
+     */
+    public function takeNotices(): array
+    {
+        [$notices, $this->wire->told->notices] = [$this->wire->told->notices, []];
+
+        return $notices;
+    }
+
+    /** The last statement's completion: its rows, generated values, server time and conditions, each as granted. */
+    public function completed(): ?Completed
+    {
+        return $this->wire->told->completed === null ? null : Completed::of($this->wire->told->completed);
+    }
+
+    /**
+     * The conditions the last statement raised, with `conditions`, taken, so each is told once.
+     *
+     * @return list<TurborelException>
+     */
+    public function takeConditions(): array
+    {
+        $conditions = $this->completed()?->conditions() ?? [];
+        $this->wire->told->completed = $this->wire->told->completed?->withoutConditions();
+
+        return $conditions;
+    }
+
+    /** The log position of the last commit the server told of, with `commit-position`; an int, or a string past PHP_INT_MAX. */
+    public function commitPosition(): int|string|null
+    {
+        return $this->wire->told->position;
+    }
+
+    /** The SQLSTATE of the warning the last statement completed with, of class 01, if it did. */
+    public function warning(): ?string
+    {
+        return $this->wire->warning;
+    }
+
+    /**
+     * Sets attributes every later Query and Execute carries, by name, read in SQL by QUERY_ATTRIBUTE(name), until set again.
+     *
+     * @param array<array-key, string> $attributes each value by its name, a name of digits alone being an int key in PHP
+     *
+     * @throws TurborelException SQLSTATE 08006 if `query-attributes` was not granted, for attributes not none
+     */
+    public function setQueryAttributes(array $attributes): void
+    {
+        (new Control($this->wire))->needs(Capability::QUERY_ATTRIBUTES, $attributes === []);
+        $pairs = [];
+        foreach ($attributes as $name => $value) {
+            $pairs[] = [(string) $name, $value];
+        }
+        $this->wire->told->attributes = $pairs;
+    }
+
+    /**
      * Asks whether the server and the connection are alive, with no statement run, the server answering at once [CLIENT Controlling the session].
      *
      * @throws TurborelException SQLSTATE 08006 if `ping` was not granted, or the connection is lost
@@ -258,6 +443,12 @@ final class Connection
     public function terminate(): void
     {
         Ending::terminate($this->wire, $this->timeouts === null ? Timeouts::TERMINATE_WITHIN : ($this->timeouts->read ?? Timeouts::TERMINATE_WITHIN));
+    }
+
+    /** The prepared statements of the session. */
+    private function preparing(): Preparing
+    {
+        return new Preparing($this->wire, $this->autocommit);
     }
 
     /**

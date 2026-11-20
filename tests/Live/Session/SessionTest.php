@@ -149,7 +149,7 @@ final class SessionTest extends LiveTestCase
         $connection->reset();
         self::assertFalse($connection->inTransaction());
         self::assertSame('ANN', $connection->setting('AUTHORIZATION'));
-        self::assertSame('01T01', ($connection->wire()->told->notices[0] ?? null)?->sqlstate);
+        self::assertSame('01T01', ($connection->wire()->told->notices[0] ?? null)?->sqlState);
         self::assertFailure('2A000', -103, static fn() => $connection->query('SELECT * FROM RESET_ME'));
         $connection->terminate();
     }

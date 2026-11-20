@@ -36,6 +36,12 @@ final readonly class Completion
         public array $raised = [[], []],
     ) {}
 
+    /** The same completion, its conditions taken. */
+    public function withoutConditions(): self
+    {
+        return new self($this->sqlcode, $this->sqlstate, $this->active, $this->counts, [$this->raised[0], []]);
+    }
+
     /**
      * The completion `$reader` reads next, its tail to the body's end.
      *

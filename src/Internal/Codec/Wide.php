@@ -23,6 +23,9 @@ final class Wide
     /** A limb's bits, all set. */
     private const int LIMB_MASK = 0xFFFF_FFFF;
 
+    /** The greatest u32. */
+    public const int U32_MAX = self::LIMB_MASK;
+
     /** The limbs of an i128. */
     private const int I128_LIMBS = 4;
 

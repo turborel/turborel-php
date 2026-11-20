@@ -13,12 +13,14 @@ use Turborel\Internal\Codec\Kind;
 use Turborel\Internal\Codec\Writer;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Ending;
+use Turborel\Internal\Statements\Preparing;
 use Turborel\Internal\Statements\Querying;
 use Turborel\Session\Capability;
 use Turborel\Session\Connection;
 use Turborel\Session\Target;
 use Turborel\Session\Trust;
 use Turborel\Statements\Completed;
+use Turborel\Statements\Statement;
 use Turborel\Tests\Support\CodecTestCase;
 use Turborel\TurborelException;
 
@@ -97,6 +99,61 @@ final class RepliesOutOfTurnTest extends CodecTestCase
         $connection->setAutocommit(true);
         self::assertSame([true, ['target' => '', 'authorization' => 'ANN', 'lost' => false]], [$connection->autocommit(), $connection->__debugInfo()]);
         self::assertConnectionFails(static fn(): Connection => Connection::connect(Target::local('/no/such/socket'), 'ann', new Trust()));
+    }
+
+    /**
+     * Verifies: [CLIENT Prepared statements] [PROTOCOL Prepare 'P'] [PROTOCOL Describe 'Y'] [PROTOCOL Deallocate 'D']:
+     * a prepared statement's request answered out of turn loses the
+     * connection; several statements whose replies break off lose it too,
+     * the failure given rather than kept as a statement's.
+     *
+     * @throws TurborelException never from writing the server's end
+     */
+    #[Test]
+    public function statementRequestsTakeTheirRepliesInTurn(): void
+    {
+        $statement = new Statement(0, [], []);
+        $requests = [
+            static fn(Preparing $p) => $p->prepare('VALUES 1'),
+            static fn(Preparing $p) => $p->describeCursor($statement, 0),
+            static fn(Preparing $p) => $p->deallocate($statement),
+            static fn(Preparing $p) => $p->fetch($statement, 0, 0),
+        ];
+        foreach ($requests as $request) {
+            [$wire, $server] = self::pair();
+            $wire->told->granted = [Capability::DESCRIBE];
+            fwrite($server, Frames::frame(Kind::PONG, ''));
+            self::assertConnectionFails(static fn() => $request(new Preparing($wire, false)));
+            self::assertNotNull($wire->lost);
+        }
+        [$wire, $server] = self::pair();
+        $wire->told->granted = [Capability::MULTI_STATEMENT];
+        fwrite($server, Frames::frame(Kind::PONG, ''));
+        self::assertConnectionFails(static fn() => (new Querying($wire, false))->many('VALUES 1; VALUES 2'));
+    }
+
+    /**
+     * Verifies: [PROTOCOL Errors and notices] [PROTOCOL Error 'E']: a failure
+     * of severity FATAL, or SQLSTATE TBR01 of a replica not caught up, is
+     * given as the server sent it, SQLCODE -920 kept, the connection kept.
+     *
+     * @throws TurborelException never from writing the server's end
+     */
+    #[Test]
+    public function aFailureIsGivenAsTheServerSentIt(): void
+    {
+        [$wire, $server] = self::pair();
+        $failure = (new Writer())->u32(-920 & 0xFFFF_FFFF)->string('TBR01')->string('not caught up')->flag(false)->flag(false)->flag(false)
+            ->u8(7)->string('FATAL')->bytesWritten();
+        fwrite($server, Frames::frame(Kind::ERROR, $failure));
+        try {
+            (new Querying($wire, false))->query('VALUES 1');
+            self::fail('a replica not caught up');
+        } catch (TurborelException $caught) {
+            self::assertSame(['TBR01', -920, 'not caught up', 'FATAL', false], [$caught->getSqlState(), $caught->getSqlCode(), $caught->getMessage(),
+                $caught->getDiagnostics()['severity'] ?? null, $caught->endsConnection()]);
+        }
+        self::assertNull($wire->lost);
     }
 
     /**

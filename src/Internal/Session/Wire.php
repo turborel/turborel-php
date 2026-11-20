@@ -20,6 +20,7 @@ use Turborel\Internal\Codec\Reply\Suspended;
 use Turborel\Internal\Codec\Request\Request;
 use Turborel\Internal\ConnectionFailure;
 use Turborel\Internal\Transport\Stream;
+use Turborel\Session\Notice as PublicNotice;
 use Turborel\TurborelException;
 
 /**
@@ -46,8 +47,14 @@ final class Wire
     /** Whether the session's transaction is active, as the server last said. */
     public bool $active = false;
 
+    /** The SQLSTATE of the warning the last statement completed with, if it did. */
+    public ?string $warning = null;
+
     /** What the server has told beside the replies. */
     public Told $told;
+
+    /** The number the next statement prepared takes, from 0, wrapping past a u32. */
+    public int $nextStatement = 0;
 
     /** The wire over `$stream`. */
     public function __construct(
@@ -94,7 +101,7 @@ final class Wire
         while (true) {
             $reply = $this->next();
             if ($reply instanceof Notice) {
-                $this->told->notice($reply);
+                $this->told->notice(new PublicNotice($reply->sqlstate, $reply->message, $reply->diagnostics === null ? [] : $reply->diagnostics->fields));
             } elseif ($reply instanceof Status) {
                 $this->told->settings[$reply->name] = $reply->value;
             } else {
@@ -154,11 +161,14 @@ final class Wire
     {
         if ($reply instanceof Complete) {
             $this->active = $reply->completion->active;
+            $this->warning = str_starts_with($reply->completion->sqlstate, '01') ? $reply->completion->sqlstate : null;
             $this->told->position = $reply->completion->counts->position ?? $this->told->position;
             $this->told->completed = $reply->completion;
         } elseif ($reply instanceof Error) {
-            $this->active = $reply->failure->state->active;
-        } elseif ($reply instanceof Description || $reply instanceof Rows || $reply instanceof Suspended
+            [$this->active, $this->warning] = [$reply->failure->state->active, null];
+        } elseif ($reply instanceof Description) {
+            [$this->active, $this->warning] = [true, null];
+        } elseif ($reply instanceof Rows || $reply instanceof Suspended
             || $reply instanceof LobData || $reply instanceof LobCreated) {
             // A locator is valid within a transaction alone, and a result's rows are read within one.
             $this->active = true;

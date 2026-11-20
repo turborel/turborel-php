@@ -61,7 +61,7 @@ session back as it was at login, and `changeUser` authenticates the
 connection again as another user, each only where granted.
 
 `query` runs one statement; [Statements and Cursors](22-statements.md)
-describes it with the rest of milestone M3. `setReadTimeout` bounds each
+describes it with the rest of a session's statements. `setReadTimeout` bounds each
 read and write from then on, `setMaxBody` the longest reply taken, 16
 MiB by default. A connection lost, `isLost`, takes no more requests.
 

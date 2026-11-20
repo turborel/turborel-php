@@ -33,6 +33,9 @@ final class ValueFailure
     /** SQLSTATE 07006, restricted data type attribute violation. */
     public const string RESTRICTED = '07006';
 
+    /** SQLSTATE 2200N, invalid XML content. */
+    public const string INVALID_XML_CONTENT = '2200N';
+
     /** A number, or a field's value, out of its range: `$message` says which. */
     public static function outOfRange(string $message): TurborelException
     {
@@ -49,6 +52,12 @@ final class ValueFailure
     public static function invalidJson(string $message): TurborelException
     {
         return new TurborelException($message, self::INVALID_JSON, self::DATA);
+    }
+
+    /** Text that is not well-formed XML content: `$message` says why. */
+    public static function invalidXmlContent(string $message): TurborelException
+    {
+        return new TurborelException($message, self::INVALID_XML_CONTENT, self::DATA);
     }
 
     /** A PHP value the protocol has no value for: `$message` says which. */

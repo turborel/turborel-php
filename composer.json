@@ -31,9 +31,11 @@
     },
     "suggest": {
         "ext-bcmath": "Arithmetic on exact numbers, which the driver gives as strings",
+        "ext-dom": "An XML value's nodes, parsed from its text",
         "ext-zlib": "Compressed frames, the protocol's capability compression"
     },
     "require-dev": {
+        "ext-dom": "*",
         "ext-simplexml": "*",
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan": "^2.3",

@@ -10,7 +10,6 @@ in [RULES.md](RULES.md).
 Code never cites this file (R-DOC-5).
 
 [M2 Connect](#m2-connect) ·
-[M3 Statements](#m3-statements) ·
 [M4 Large objects and bulk](#m4-large-objects-and-bulk) ·
 [M5 Settings](#m5-settings) · [M6 Throughput](#m6-throughput) ·
 [M7 Standard API](#m7-standard-api) · [M8 Parity audit](#m8-parity-audit)
@@ -23,23 +22,6 @@ Code never cites this file (R-DOC-5).
   no keying material, so SCRAM-SHA-256-PLUS binds by
   `tls-server-end-point` over TLS 1.3 too, which the server takes
   (RULES.md D1); the owner decides how these rows are met.
-
-## M3 Statements
-
-- Queries and prepared statements: P-REQ-2, P-QUERY-2 to P-QUERY-6,
-  P-EXEC-2 to P-EXEC-4, the P-PREP, P-FETCH, P-CLOSE, P-DEALLOC and
-  P-DESC rows, the C-RUN rows but C-RUN-6, and the C-PREP rows.
-- Completions, failures, notices and conditions: P-COMPL-2 to
-  P-COMPL-6, the P-ERRN rows but P-ERRN-6, and C-TOLD-2 to C-TOLD-9.
-- The session: P-PING-1, the P-RESET and P-CHUSER rows, and the C-CTRL
-  rows.
-- Capabilities: P-CAP-1, P-CAP-3 to P-CAP-9, P-CAP-11, P-CAP-13 and
-  P-CAP-15 to P-CAP-18.
-- XML and UUID values: the C-XML and C-UUID rows.
-- Conversations: P-CONV-1 to P-CONV-3 and P-CONV-6.
-- The manual: the chapters Running Queries, Prepared Statements,
-  Transactions and Errors and Diagnostics; the pages of statements and
-  errors; Appendix B.
 
 ## M4 Large objects and bulk
 

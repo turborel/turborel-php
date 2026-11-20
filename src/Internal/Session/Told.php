@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Turborel\Internal\Session;
 
 use Turborel\Internal\Codec\Completion;
-use Turborel\Internal\Codec\Reply\Notice;
+use Turborel\Session\Capability;
+use Turborel\Session\Notice;
 
 /**
  * What the server has told a connection beside each statement's replies,
@@ -46,6 +47,16 @@ final class Told
     public function has(string $capability): bool
     {
         return \in_array($capability, $this->granted, true);
+    }
+
+    /**
+     * The attributes a Query or an Execute carries: none unless `query-attributes` was granted.
+     *
+     * @return list<array{string, string}>
+     */
+    public function attributes(): array
+    {
+        return $this->has(Capability::QUERY_ATTRIBUTES) ? $this->attributes : [];
     }
 
     /** Takes `$notice`: handed to the handler, or kept, the oldest dropped past KEPT_NOTICES. */
