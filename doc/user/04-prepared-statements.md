@@ -15,7 +15,9 @@ own.
 gives a `Turborel\Statements\Statement`: its `parameters`, the type each
 `?` takes, and a query's `columns`. `execute` runs it with a value for
 each `?`, in order, and gives its outcome as `query` does. Values not
-one for each `?` fail with SQLSTATE 07001.
+one for each `?` fail with SQLSTATE 07001. A value longer than its `?`'s
+type is cut to it, and the statement completes with warning 01004, as
+`warning()` tells.
 
 ```php
 $connection->query('CREATE TABLE STAFF (ID INTEGER, NAME VARCHAR(20))');

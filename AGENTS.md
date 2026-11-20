@@ -54,6 +54,7 @@ Project automation is the language's own tooling, never shell scripts
 | `tests/Unit/` | tests with no network, mirroring `src/` |
 | `tests/Live/` | live tests against a server on loopback, run where TURBOREL_TEST_SERVER names one |
 | `tests/Server/` | the live tests' server set-up: turboreld, or the nightly image, with certificates made for the run (R-TEST-8) |
+| `tests/Fixtures/` | files the tests read: Turborel's sample frames, copied at a pinned commit (D12) |
 | `tools/` | the checks tool (D4), run by `tools/run.php` |
 | `doc/` | the manual (R-DOC-7) |
 

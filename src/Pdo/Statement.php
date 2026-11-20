@@ -207,9 +207,11 @@ final class Statement implements \IteratorAggregate
     }
 
     /**
-     * What PDO's getColumnMeta gives of the column `$column`, from 0: its name, its SQL type, the PDO type it reads as, its length and precision, and whether it takes no null; false if there is no such column.
+     * What PDO's getColumnMeta gives of the column `$column`, from 0: its name, its SQL type's name, as declared where
+     * `declared-types` was granted, its whole type as SQL writes it as `turborel:decl_type`, the PDO type it reads as, its
+     * length and precision, and whether it takes no null; false if there is no such column.
      *
-     * @return array{name: string, native_type: string, pdo_type: int, len: int, precision: int, flags: list<string>}|false
+     * @return array{name: string, native_type: string, 'turborel:decl_type': string, pdo_type: int, len: int, precision: int, flags: list<string>}|false
      */
     public function getColumnMeta(int $column): array|false
     {

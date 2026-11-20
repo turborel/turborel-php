@@ -46,8 +46,8 @@ final class Replies
         $reply = match ($kind) {
             Kind::CHALLENGE => new Challenge($reader->bytes()),
             Kind::READY => new Ready($reader->string(), $reader->key(), $reader->strings(), $reader->string()),
-            Kind::PREPARED => new Prepared($reader->u32(), Fields::parameters($reader), Fields::columns($reader)),
-            Kind::DESCRIPTION => new Description(Fields::columns($reader)),
+            Kind::PREPARED => new Prepared($reader->u32(), Fields::parameters($reader), Fields::declared($reader, Fields::columns($reader))),
+            Kind::DESCRIPTION => new Description(Fields::declared($reader, Fields::columns($reader))),
             Kind::ROWS => new Rows(Fields::rows($reader)),
             Kind::SUSPENDED => new Suspended(),
             Kind::COMPLETE => new Complete(Completion::read($reader)),

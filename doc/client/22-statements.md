@@ -37,7 +37,12 @@ final class Connection
 `Streamed` holds `rows`, a count, and `completed`; `Ran` holds
 `outcomes` and `failure`; `Statement` holds `number`, `parameters` and
 `columns`; `Batch` holds `rows` and `more`. `Sink` takes `columns` and
-then `rows`, a batch at a time.
+then `rows`, a batch at a time. A `Turborel\Type\Column` holds `name`,
+`type`, as its values' tag tells it, `notNull`, and, granted
+`declared-types`, `declared`: the type it was declared with, its
+`name` as the Information Schema's DATA_TYPE gives it, as INTEGER, and
+its type as SQL `written`; `typeWritten()` gives the type as it was
+declared, else as its tag's type is written, as NUMERIC(10,0).
 
 ## DESCRIPTION
 
@@ -96,17 +101,20 @@ $all = $connection->prepare('SELECT NAME FROM STAFF ORDER BY ID');
 $first = $connection->openCursor($all, [], 1);
 $rest = $connection->fetch($all);
 echo $first->rows[0][0], ' then ', $rest->rows[0][0], ', more: ', var_export($rest->more, true), PHP_EOL;
+$id = $connection->prepare('SELECT ID FROM STAFF')->columns[0];
+echo $id->declared?->name, ', tag type ', get_debug_type($id->type), PHP_EOL;
 ```
 
 ```text
 Ada then Grace, more: false
+INTEGER, tag type Turborel\Type\ExactType
 ```
 
 ## STANDARD
 
 [PROTOCOL Query 'Q'], [PROTOCOL Prepare 'P'], [PROTOCOL Execute 'E'],
 [PROTOCOL Fetch 'F'], [PROTOCOL Close 'C'], [PROTOCOL Deallocate 'D'],
-[PROTOCOL Describe 'Y'], [PROTOCOL Complete 'K'],
+[PROTOCOL Describe 'Y'], [PROTOCOL Complete 'K'], [PROTOCOL Declared types],
 [PROTOCOL Conversations], [CLIENT Running statements],
 [CLIENT Prepared statements], [CLIENT What the server tells],
 [CLIENT Controlling the session].

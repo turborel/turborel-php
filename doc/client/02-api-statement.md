@@ -52,8 +52,10 @@ maps it. A column of no name is named by the empty string.
 
 `rowCount` gives the rows the statement changed, or a query returned;
 `columnCount` its columns; `getColumnMeta` a column's name, its SQL
-type's name as `native_type`, the PDO type it reads as, its length and
-precision, and `not_null` among its flags where it takes no null.
+type's name as `native_type`, as it was declared, as INTEGER, the whole
+type as SQL writes it as `turborel:decl_type`, as DECIMAL(9,2), the PDO
+type it reads as, its length and precision, and `not_null` among its
+flags where it takes no null.
 `closeCursor` lets its rows go.
 
 ## ERRORS

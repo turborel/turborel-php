@@ -19,6 +19,8 @@ use Turborel\Type\BooleanType;
 use Turborel\Type\Column;
 use Turborel\Type\DatetimeType;
 use Turborel\Type\DecFloatType;
+use Turborel\Type\Declared;
+use Turborel\Type\ExactType;
 use Turborel\Type\JsonType;
 use Turborel\Type\LobType;
 use Turborel\Value\CharUnits;
@@ -37,7 +39,8 @@ final class PdoPartsTest extends CodecTestCase
     /**
      * Verifies: [DESIGN] D2: getColumnMeta names each type as SQL writes
      * its kind, reads a truth value as PARAM_BOOL and a large object as
-     * PARAM_LOB, and gives a length and a precision where a type has one.
+     * PARAM_LOB, and gives a length and a precision where a type has one;
+     * granted `declared-types`, it names the type as it was declared.
      */
     #[Test]
     public function aColumnsMetaNamesItsType(): void
@@ -51,6 +54,8 @@ final class PdoPartsTest extends CodecTestCase
             ['BOOLEAN', Pdo::PARAM_BOOL, -1, 0], ['TIMESTAMP WITH TIME ZONE', Pdo::PARAM_STR, -1, 6], ['BINARY LARGE OBJECT', Pdo::PARAM_LOB, 9, 0],
             ['JSON', Pdo::PARAM_STR, -1, 0], ['CHARACTER LARGE OBJECT', Pdo::PARAM_LOB, 9, 0], ['BINARY', Pdo::PARAM_STR, 4, 0]], $meta);
         self::assertSame(['', ['not_null']], [ColumnMeta::of($columns[6])['name'], ColumnMeta::of($columns[6])['flags']]);
+        $declared = ColumnMeta::of(new Column('I', new ExactType(10, 0), false, new Declared('INTEGER', 'INTEGER')));
+        self::assertSame(['INTEGER', 'INTEGER', 'NUMERIC(10,0)'], [$declared['native_type'], $declared['turborel:decl_type'], ColumnMeta::of(new Column('N', new ExactType(10, 0), false))['turborel:decl_type']]);
     }
 
     /**

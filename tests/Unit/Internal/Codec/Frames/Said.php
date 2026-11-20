@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Turborel\Tests\Unit\Internal\Codec\Frames;
+
+use Turborel\Internal\Codec\Completion;
+use Turborel\Internal\Codec\Failure;
+use Turborel\Internal\Codec\Reply\Challenge;
+use Turborel\Internal\Codec\Reply\Complete;
+use Turborel\Internal\Codec\Reply\Description;
+use Turborel\Internal\Codec\Reply\Error;
+use Turborel\Internal\Codec\Reply\LobCreated;
+use Turborel\Internal\Codec\Reply\LobData;
+use Turborel\Internal\Codec\Reply\Notice;
+use Turborel\Internal\Codec\Reply\Prepared;
+use Turborel\Internal\Codec\Reply\Ready;
+use Turborel\Internal\Codec\Reply\Reply;
+use Turborel\Internal\Codec\Reply\Rows;
+use Turborel\Internal\Codec\Reply\Status;
+use Turborel\Internal\Codec\Written;
+use Turborel\Internal\Copy\Text;
+use Turborel\TurborelException;
+use Turborel\Type\Column;
+use Turborel\Type\Parameter;
+
+/**
+ * A reply decoded, said in words, as a sample frame's meaning says it,
+ * for the sample frames' test to compare.
+ */
+final class Said
+{
+    /**
+     * What `$reply` says.
+     *
+     * @throws TurborelException never, every value having a literal
+     */
+    public static function of(Reply $reply): string
+    {
+        return match (true) {
+            $reply instanceof Challenge => "Challenge {$reply->challenge}",
+            $reply instanceof Ready => "Ready {$reply->authorization}, key " . strtoupper(bin2hex($reply->key)) . ', ' . implode(' ', $reply->capabilities) . ", {$reply->server}",
+            $reply instanceof Prepared => "Prepared {$reply->statement}, parameters " . implode(', ', array_map(self::parameter(...), $reply->parameters)) . '; ' . self::columns($reply->columns),
+            $reply instanceof Description => 'Description ' . self::columns($reply->columns),
+            $reply instanceof Rows => trim('Rows ' . implode(' ', array_map(static fn(array $row): string => '(' . implode(', ', array_map(Text::literal(...), $row)) . ')', $reply->rows))),
+            $reply instanceof Complete => 'Complete ' . self::completion($reply->completion),
+            $reply instanceof Error => 'Error ' . self::failure($reply->failure),
+            $reply instanceof LobData => 'Lob data ' . strtoupper(bin2hex($reply->data)),
+            $reply instanceof LobCreated => "Lob locator {$reply->locator}",
+            $reply instanceof Notice => "Notice {$reply->sqlstate} {$reply->message}" . self::fields($reply->diagnostics->fields ?? []),
+            $reply instanceof Status => "Status {$reply->name}={$reply->value}",
+            default => (new \ReflectionClass($reply))->getShortName(),
+        };
+    }
+
+    /** A parameter: its type as written, `varying` where it is flagged so. */
+    private static function parameter(Parameter $parameter): string
+    {
+        return Written::of($parameter->type) . ($parameter->varying ? ' varying' : '');
+    }
+
+    /**
+     * Columns, each its name, its type as written, NOT NULL, and its declared type where told.
+     *
+     * @param list<Column> $columns
+     */
+    private static function columns(array $columns): string
+    {
+        $one = static fn(Column $c): string => ($c->name ?? '?') . ' ' . Written::of($c->type) . ($c->notNull ? ' NOT NULL' : '')
+            . ($c->declared === null ? '' : " declared {$c->declared->name}/{$c->declared->written}");
+
+        return 'columns ' . implode(', ', array_map($one, $columns));
+    }
+
+    /** A completion: its codes, active, and each tail field it carries. */
+    private static function completion(Completion $c): string
+    {
+        $tail = array_filter([
+            $c->counts->position === null ? null : "position {$c->counts->position}",
+            $c->counts->more ? 'more' : null,
+            $c->counts->rows === null ? null : "rows {$c->counts->rows}",
+            $c->raised[0] === [] ? null : 'generated ' . implode(' ', $c->raised[0]),
+            $c->raised[1] === [] ? null : 'conditions ' . implode('; ', array_map(self::failure(...), $c->raised[1])),
+            $c->counts->time === null ? null : "time {$c->counts->time->total} {$c->counts->time->queued} {$c->counts->time->locks}",
+        ]);
+
+        return "{$c->sqlcode} {$c->sqlstate}" . ($c->active ? ' active' : '') . ($tail === [] ? '' : ', ' . implode(', ', $tail));
+    }
+
+    /** A failure: its codes, message, citation, place, active, and diagnostics. */
+    private static function failure(Failure $f): string
+    {
+        $cited = $f->cited->rule === null ? '' : " [{$f->cited->rule}]";
+        $placed = $f->cited->position === null ? '' : " at {$f->cited->position}";
+
+        return "{$f->sqlcode} {$f->sqlstate} {$f->message}{$cited}{$placed}" . ($f->state->active ? ' active' : '') . self::fields($f->state->diagnostics->fields ?? []);
+    }
+
+    /**
+     * Diagnostics fields, each its name and value.
+     *
+     * @param array<string, string> $fields
+     */
+    private static function fields(array $fields): string
+    {
+        return $fields === [] ? '' : ' {' . implode(', ', array_map(static fn(string $k, string $v): string => "{$k}={$v}", array_keys($fields), $fields)) . '}';
+    }
+}

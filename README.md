@@ -29,8 +29,7 @@ large objects, bulk copy, import and export, settings from a URI, the
 environment and service and password files, several servers, pipelines
 and pools.
 
-The driver is built in milestones, M0 to M8; every one is done but M8's
-item that waits for Turborel's file of sample frames.
+The driver was built in milestones, M0 to M8, and every one is done.
 [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by row, and
 [TODO.md](TODO.md) what is open.
 

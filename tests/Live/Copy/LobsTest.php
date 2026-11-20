@@ -114,6 +114,31 @@ final class LobsTest extends LiveTestCase
     }
 
     /**
+     * Verifies: [CLIENT Large objects] [PROTOCOL Lob 'L']: a character
+     * object's octets are checked as UTF-8 as each Append comes: one not
+     * UTF-8 is refused by its Append (SQLSTATE 22021), and every later
+     * Append; one ending within a character is refused where it is used.
+     *
+     * @throws TurborelException never from the writes that are UTF-8
+     */
+    #[Test]
+    public function aCharacterObjectIsCheckedAsEachAppendComes(): void
+    {
+        $connection = self::owner();
+        $connection->query('CREATE TABLE L_UTF8 (BODY CLOB(1M))');
+        $bad = $connection->createLob(LobKind::Character);
+        $bad->write("caf\xFF");
+        self::assertFailure('22021', -301, $bad->flush(...));
+        $bad->write('more');
+        self::assertFailure('22021', -301, $bad->flush(...));
+        $cut = $connection->createLob(LobKind::Character);
+        $cut->write("caf\xC3");
+        $locator = $cut->finish();
+        self::assertFailure('22021', -301, static fn() => $connection->execute($connection->prepare('INSERT INTO L_UTF8 VALUES (?)'), [$locator]));
+        $connection->terminate();
+    }
+
+    /**
      * A connection as ANN, in which `$table` holds a short CLOB, a CLOB of 300 000 characters, and a BLOB of 70 000 octets, committed.
      *
      * @throws TurborelException if it cannot be made

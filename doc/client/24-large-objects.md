@@ -53,7 +53,7 @@ valid until its transaction ends.
 | SQLSTATE | SQLCODE | When |
 |---|---|---|
 | 0F001 | -301 | A locator no longer valid |
-| 22021 | -301 | A character large object's octets not UTF-8, as the server finds them |
+| 22021 | -301 | A character large object's octets not UTF-8, as the server checks them at each Append, which refuses them and every Append after; one that ends within a character, where it is used |
 | 22001 | -301 | A value longer than its column takes |
 | 08006 | -919 | A reply out of turn, or the server sending less than a value's length |
 

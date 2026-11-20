@@ -135,8 +135,8 @@ final class SessionTest extends LiveTestCase
      * Verifies: [PROTOCOL Status 'T']: at login before Ready, and after a
      * Reset before its Complete, the server tells one of each name in the
      * page's table, in its order, then the session's own settings; after a
-     * statement, the first after login too, only what it changed. CATALOG is the database's, as a
-     * string, empty were it null.
+     * statement, the first after login too, only what it changed. CATALOG is
+     * the catalog's name, an identifier, never empty.
      *
      * @throws TurborelException never from the statements
      */

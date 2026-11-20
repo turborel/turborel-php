@@ -91,7 +91,9 @@ final class PdoTest extends LiveTestCase
         $byPaid->bindValue(1, '3', Pdo::PARAM_INT);
         $byPaid->execute();
         self::assertSame([2, 2], [$byPaid->columnCount(), $byPaid->rowCount()]);
-        self::assertSame(['name' => 'NAME', 'native_type' => 'CHARACTER VARYING', 'pdo_type' => Pdo::PARAM_STR, 'len' => 20, 'precision' => 0, 'flags' => ['not_null']], $byPaid->getColumnMeta(1));
+        $name = ['name' => 'NAME', 'native_type' => 'CHARACTER VARYING', 'turborel:decl_type' => 'CHARACTER VARYING(20)', 'pdo_type' => Pdo::PARAM_STR, 'len' => 20, 'precision' => 0, 'flags' => ['not_null']];
+        self::assertSame($name, $byPaid->getColumnMeta(1));
+        self::assertSame(['INTEGER', 'INTEGER'], [$byPaid->getColumnMeta(0)['native_type'] ?? null, $byPaid->getColumnMeta(0)['turborel:decl_type'] ?? null]);
         self::assertFalse($byPaid->getColumnMeta(9));
         $barbara = $byPaid->fetch(Pdo::FETCH_ASSOC);
         self::assertIsArray($barbara);

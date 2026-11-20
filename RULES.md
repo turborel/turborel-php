@@ -76,6 +76,7 @@ Each is told in full in [§7](#7-the-decisions).
 | `tests/Unit/` | tests with no network, mirroring `src/` |
 | `tests/Live/` | live tests against a server on loopback, run where TURBOREL_TEST_SERVER names one |
 | `tests/Server/` | the live tests' server set-up: turboreld, or the nightly image, with certificates made for the run (R-TEST-8) |
+| `tests/Fixtures/` | files the tests read: Turborel's sample frames, copied at a pinned commit (D12) |
 | `tools/` | the checks tool (D4), run by `tools/run.php` |
 | `doc/` | the manual (R-DOC-7) |
 
@@ -522,6 +523,12 @@ notice, a deprecation or a risky test fails the run. Each test class
 names the classes it covers with `#[CoversClass]`, and code it runs
 outside them makes it risky. Tests run in their written order (R-TEST-5).
 The settings are in `phpunit.xml.dist`.
+
+Turborel's sample frames, `doc/client/05-protocol-frames.tsv`, are
+copied into `tests/Fixtures/` at a pinned commit of Turborel, 045e42a9,
+which their test names, rather than read from a Turborel checkout when
+one is there: a copy gives every run, and CI, the same frames. A new
+copy is taken with the pins of the headings (D6).
 
 #### D13. composer.lock is committed, resolved for PHP 8.3
 

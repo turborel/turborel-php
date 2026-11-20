@@ -64,10 +64,14 @@ final class Capability
     /** A Complete carries its statement's conditions in place of Notices. */
     public const string CONDITIONS = 'conditions';
 
+    /** A Prepared and a Description carry each column's declared type, tail 19. */
+    public const string DECLARED_TYPES = 'declared-types';
+
     /** Every capability, in the spec's order. */
     public const array ALL = [
         self::NOTICES, self::STATUS, self::DIAGNOSTICS, self::DESCRIBE, self::CURSORS, self::PING, self::RESET,
         self::CHANGE_USER, self::QUERY_ATTRIBUTES, self::CONNECTION_ATTRIBUTES, self::MULTI_STATEMENT, self::COMPRESSION,
         self::COMMIT_POSITION, self::COPY, self::ROW_COUNTS, self::GENERATED_VALUES, self::FETCH_ENDS, self::CONDITIONS,
+        self::DECLARED_TYPES,
     ];
 }

@@ -47,7 +47,10 @@ it. A locator no longer valid fails with SQLSTATE 0F001.
 `createLob` makes a value written a piece at a time: its writer's
 `write` takes each piece, sent to the server a chunk at a time, and
 `finish` gives the value as a `LobLocator` to pass as a parameter of a
-CLOB or BLOB. A character large object's octets are UTF-8, and a
+CLOB or BLOB. A character large object's octets are UTF-8, as the
+server checks at each Append: one that is not is refused, SQLSTATE
+22021, with every Append after it, and one that ends within a character
+is refused where it is used. A
 character may be split between writes.
 
 ```php

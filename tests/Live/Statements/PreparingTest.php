@@ -20,6 +20,7 @@ use Turborel\TurborelException;
 use Turborel\Type\CharacterType;
 use Turborel\Type\Column;
 use Turborel\Type\ExactType;
+use Turborel\Value\Binary;
 use Turborel\Value\Exact;
 
 /**
@@ -205,6 +206,54 @@ final class PreparingTest extends LiveTestCase
         $without->fetch($again);
         self::assertTrue($without->inTransaction());
         $without->terminate();
+    }
+
+    /**
+     * Verifies: [CLIENT Prepared statements] [PROTOCOL Declared types]:
+     * granted `declared-types`, which connecting asks for, a column gives
+     * the type it was declared with, INTEGER of an exact numeric type
+     * written as precision 10 and scale 0, and its type written as
+     * declared; not granted, none, its type written as its tag's.
+     *
+     * @throws TurborelException never from the statements
+     */
+    #[Test]
+    public function aColumnGivesTheTypeItWasDeclaredWith(): void
+    {
+        $connection = self::staff('P_DECLARED');
+        [$id, $name] = $connection->prepare('SELECT ID, NAME FROM P_DECLARED')->columns + [null, null];
+        self::assertSame(['INTEGER', 'INTEGER', 'CHARACTER VARYING(20)'], [$id?->declared?->name, $id?->typeWritten(), $name?->typeWritten()]);
+        self::assertSame('INTEGER', ($connection->query('SELECT ID FROM P_DECLARED')->columns[0] ?? null)?->declared?->name);
+        $connection->query('COMMIT');
+        $offer = new Offer(array_values(array_diff(Defaults::CAPABILITIES, [Capability::DECLARED_TYPES])));
+        $without = Connection::connect(self::socket(), 'ann', new Trust(), null, $offer);
+        $bare = $without->prepare('SELECT ID FROM P_DECLARED')->columns[0] ?? null;
+        self::assertSame([null, 'NUMERIC(10,0)'], [$bare?->declared, $bare?->typeWritten()]);
+        $connection->terminate();
+        $without->terminate();
+    }
+
+    /**
+     * Verifies: [CLIENT Prepared statements] [PROTOCOL Execute 'E']: each
+     * `?` of an INSERT's rows takes its object column's type, so large
+     * objects beside short literals are stored whole; a `?` cut to its
+     * type completes with warning 01004, its value cut.
+     *
+     * @throws TurborelException never from the statements
+     */
+    #[Test]
+    public function aParameterTakesItsColumnsTypeAndWarnsWhenCut(): void
+    {
+        $connection = self::owner();
+        $connection->query('CREATE TABLE P_ROWS (N INTEGER, BODY CLOB(1M), PIC BLOB(4M))');
+        $insert = $connection->prepare("INSERT INTO P_ROWS VALUES (1, 'short', X'0102'), (2, ?, ?)");
+        $connection->execute($insert, [str_repeat('c', 80_000), new Binary(str_repeat("\x05", 70_000))]);
+        $lengths = $connection->query('SELECT CHAR_LENGTH(BODY), OCTET_LENGTH(PIC) FROM P_ROWS WHERE N = 2')->rows[0] ?? [];
+        self::assertSame(['80000', '70000'], array_map(static fn(mixed $v): string => $v instanceof Exact ? $v->units : '', $lengths));
+        $connection->query('CREATE TABLE P_CUT (V VARCHAR(5))');
+        $connection->execute($connection->prepare('INSERT INTO P_CUT VALUES (?)'), ['abcdefgh']);
+        self::assertSame(['01004', [['abcde']]], [$connection->warning(), $connection->query('SELECT V FROM P_CUT')->rows]);
+        $connection->terminate();
     }
 
     /**

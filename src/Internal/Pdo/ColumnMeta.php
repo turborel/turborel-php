@@ -19,8 +19,11 @@ use Turborel\Value\LobKind;
 
 /**
  * What PDO's getColumnMeta gives of a column (RULES.md D2): its name, its
- * SQL type's name, the PDO type it reads as, its length and precision,
- * and `not_null` among its flags where it takes no null.
+ * SQL type's name, the one it was declared with where `declared-types` was
+ * granted, as INTEGER, else its type's kind; the PDO type it reads as, its
+ * length and precision, `not_null` among its flags where it takes no null,
+ * and, as PDO's sqlite driver gives `sqlite:decl_type`, `turborel:decl_type`,
+ * its whole type as SQL writes it.
  *
  * @internal
  */
@@ -29,7 +32,7 @@ final class ColumnMeta
     /**
      * The meta of `$column`.
      *
-     * @return array{name: string, native_type: string, pdo_type: int, len: int, precision: int, flags: list<string>}
+     * @return array{name: string, native_type: string, 'turborel:decl_type': string, pdo_type: int, len: int, precision: int, flags: list<string>}
      */
     public static function of(Column $column): array
     {
@@ -37,7 +40,8 @@ final class ColumnMeta
 
         return [
             'name' => $column->name ?? '',
-            'native_type' => self::name($type),
+            'native_type' => $column->declared->name ?? self::name($type),
+            'turborel:decl_type' => $column->typeWritten(),
             'pdo_type' => match (true) {
                 $type instanceof BooleanType => Pdo::PARAM_BOOL,
                 $type instanceof LobType => Pdo::PARAM_LOB,

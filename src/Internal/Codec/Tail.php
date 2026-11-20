@@ -50,6 +50,9 @@ final class Tail
     /** Time, on Complete: the server's time for the statement. */
     public const int TIME = 18;
 
+    /** Tag 19, of Prepared and Description: each column's declared type, granted `declared-types`. */
+    public const int DECLARED = 19;
+
     /** [DESIGN] The most attributes a message takes [PROTOCOL The tail]. */
     public const int MAX_ATTRIBUTES = 32;
 

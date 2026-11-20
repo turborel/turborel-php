@@ -6,6 +6,7 @@ namespace Turborel\Internal\Codec;
 
 use Turborel\TurborelException;
 use Turborel\Type\Column;
+use Turborel\Type\Declared;
 use Turborel\Type\Parameter;
 
 /**
@@ -41,6 +42,33 @@ final class Fields
         $columns = [];
         for ($count = $reader->u32(); $count > 0; $count--) {
             $columns[] = self::column($reader);
+        }
+
+        return $columns;
+    }
+
+    /**
+     * `$columns`, each with its declared type where the tail of a Prepared or a Description tells it, tag 19: a count, then
+     * of each column its type's name and its type as SQL writes it [PROTOCOL Declared types].
+     *
+     * @param list<Column> $columns
+     *
+     * @return list<Column>
+     *
+     * @throws TurborelException SQLSTATE 08006 if the tail is malformed, or its types are not one for each column
+     */
+    public static function declared(Reader $reader, array $columns): array
+    {
+        $tail = new Tail();
+        while ($tail->next($reader, [Tail::DECLARED]) !== null) {
+            $declared = [];
+            for ($count = $reader->u32(); $count > 0; $count--) {
+                $declared[] = new Declared($reader->string(), $reader->string());
+            }
+            if (\count($declared) !== \count($columns)) {
+                throw $reader->malformed('its declared types are not one for each column');
+            }
+            $columns = array_map(static fn(Column $c, Declared $d): Column => $c->withDeclared($d), $columns, $declared);
         }
 
         return $columns;
