@@ -38,8 +38,8 @@ zeros in its exponent. A `Json` holds its stored form, which `text()`
 writes as JSON text and `value()` gives as PHP's values. A `Uuid` holds
 its 16 octets, and `(string) $id` gives its text.
 
-The connection that reads and sends them is filled at milestone M2, and
-the rest of this page at M3.
+A connection reads them in its rows, and sends them as the parameters of
+a prepared statement ([Statements and Cursors](22-statements.md)).
 
 ## ERRORS
 

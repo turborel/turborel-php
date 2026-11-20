@@ -72,7 +72,7 @@ Each is told in full in [§7](#7-the-decisions).
 | `src/Internal/Codec/` | the `codec` layer, internal (D9) |
 | `src/Internal/Transport/`, `src/Internal/Auth/`, `src/Internal/Tls/` | the `transport`, `auth` and `tls` layers, internal, as they are built |
 | `src/Session/`, `src/Statements/`, `src/Lobs/`, `src/Copy/`, `src/Settings/`, `src/Pipeline/`, `src/Pool/` | the low-level client's public layers, as they are built, their internals under `src/Internal/` |
-| `src/Pdo/` | the `api` layer, the PDO-style API (D2), from M7 |
+| `src/Pdo/` | the `api` layer, the PDO-style API (D2) |
 | `tests/Unit/` | tests with no network, mirroring `src/` |
 | `tests/Live/` | live tests against a server on loopback, run where TURBOREL_TEST_SERVER names one |
 | `tests/Server/` | the live tests' server set-up: turboreld, or the nightly image, with certificates made for the run (R-TEST-8) |

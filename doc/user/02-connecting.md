@@ -5,8 +5,8 @@
 A program reaches a server through a `Turborel\Session\Connection`,
 made to a target as a user, proved by a mechanism. This chapter tells
 how; [Connections](../client/21-connections.md) in the API Reference
-lists every method. The standard API's way of connecting comes at
-milestone M7.
+lists every method. The standard interface connects by a URI, as
+[The Connection Class](../client/01-api-connection.md) tells.
 
 ## Where the server is
 

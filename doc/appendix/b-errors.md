@@ -19,7 +19,13 @@ characters of the SQLSTATE are its class.
 | 0A000 | -900 | JSON is past turborel's limits, nested more than 128 deep or a stored form past 256 MiB | no |
 | 2200N | -301 | An XML value's text is not well-formed content | no |
 | 22000 | -301 | The protocol has no value for a PHP value | no |
-| TB910 | -910 | The program misused the API where turborel-client has no case of it: a request other than a copy's rows, its end or Ping while the copy is under way; a TCP port not one, a timeout not positive, or a delimiter of no use | no |
+| TB910 | -910 | The program misused the API where turborel-client has no case of it: a request other than a copy's rows, its end or Ping while the copy is under way; a TCP port not one, a timeout not positive, or a delimiter of no use; a pooled connection asked for once given back; the standard interface's misuse, as a named parameter, an attribute not taken, or a transaction ended where none is | no |
+| 08001 | -919 | Settings that cannot be read, or name no user; of several servers tried, none kept, or a server not of the role asked; no pooled connection back within `wait` | no connection was made |
+| 08003, 08002, 2E000, 08001, 08004 | -919 | The SQL-agent's: no such connection, a name in use, a name that is no identifier, a server not reached, a server refusing | no |
+| 0A001 | -900 | The SQL-agent's CONNECT or SET CONNECTION within an active transaction | no |
+| 28000 | -104 | The SQL-agent's CONNECT of a user that is no authorization identifier | no |
+| 25000 | -917 | The SQL-agent's DISCONNECT of a connection in a transaction | no |
+| 2A000 | -102, -103 | The SQL-agent's connection statement that does not parse, or names by no character string literal | no |
 | 22000 | -301 | An import's input cannot be read, or does not fit the table: a record of too many or too few fields, a session with a transaction active, a table name that is not one | no |
 | 22001 | -301 | An import's string is longer than its column, found before it is sent | no |
 
