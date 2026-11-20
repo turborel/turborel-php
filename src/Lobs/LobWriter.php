@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Turborel\Lobs;
 
 use Turborel\Internal\Lobs\Lobs;
+use Turborel\Internal\Lobs\Pieces;
 use Turborel\TurborelException;
 use Turborel\Value\LobKind;
 use Turborel\Value\LobLocator;
@@ -35,7 +36,7 @@ final class LobWriter
     public function __construct(private readonly Lobs $lobs, private readonly LobKind $kind, private readonly int $locator) {}
 
     /**
-     * Writes `$octets`, sent once a chunk is waiting.
+     * Writes `$octets`, sent an Append of at most a chunk at a time, a character one cut where a character ends.
      *
      * @throws TurborelException the server's, as SQLSTATE 22021 of a character one's octets not UTF-8, or SQLSTATE 08006
      */
@@ -46,8 +47,8 @@ final class LobWriter
         if ($this->kind === LobKind::Character) {
             $this->characters += \strlen($octets) - (int) preg_match_all('/[\x80-\xBF]/', $octets);
         }
-        if (\strlen($this->pending) >= Lobs::CHUNK_OCTETS) {
-            $this->flush();
+        while (\strlen($this->pending) >= Lobs::CHUNK_OCTETS) {
+            $this->appendPiece();
         }
     }
 
@@ -75,5 +76,19 @@ final class LobWriter
         $this->flush();
 
         return new LobLocator($this->kind, $this->locator, $this->octets, $this->characters);
+    }
+
+    /**
+     * Sends the first chunk of what is pending, a character one cut where a character ends, so no Append is longer however
+     * much one write gave.
+     *
+     * @throws TurborelException the server's, or SQLSTATE 08006
+     */
+    private function appendPiece(): void
+    {
+        $cut = $this->kind === LobKind::Character ? Pieces::charCut($this->pending, Lobs::CHUNK_OCTETS) : Lobs::CHUNK_OCTETS;
+        $cut = min(max(1, $cut), \strlen($this->pending));
+        [$piece, $this->pending] = [substr($this->pending, 0, $cut), substr($this->pending, $cut)];
+        $this->lobs->append($this->locator, $piece);
     }
 }
