@@ -38,7 +38,7 @@ final class ConnectingBySettingsTest extends LiveTestCase
      * Verifies: [CLIENT Connecting by settings] [CLIENT Several servers]
      * [CLIENT Where settings come from]: a connection is made as a URI says,
      * its hosts tried in order, each address in turn, a server that cannot
-     * be reached passed for the next; with none kept, the failure names each
+     * be reached passed for the next, in a random order where asked; with none kept, the failure names each
      * and why (SQLSTATE 08001); the program's name is sent as the
      * connection attribute `application`.
      *
@@ -48,7 +48,7 @@ final class ConnectingBySettingsTest extends LiveTestCase
     public function hostsAreTriedInTurn(): void
     {
         self::server();
-        $uri = 'turborel://ann@127.0.0.1:' . self::NOWHERE . ',localhost:' . LiveServer::PORT . '/?tls_mode=disable&connect_timeout=5&application_name=reports';
+        $uri = 'turborel://ann@127.0.0.1:' . self::NOWHERE . ',localhost:' . LiveServer::PORT . '/?tls_mode=disable&connect_timeout=5&application_name=reports&load_balance=random';
         $connection = Settings::resolveIn(Options::fromUri($uri), self::none())->connect();
         self::assertSame('ANN', $connection->authorization());
         $shown = $connection->query("SELECT ATTRIBUTE_VALUE FROM INFORMATION_SCHEMA.CONNECTION_ATTRIBUTES WHERE ATTRIBUTE_NAME = 'application'")->rows;

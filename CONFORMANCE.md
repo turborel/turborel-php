@@ -704,11 +704,11 @@ From `doc/client/02-library.md`, The Client Library.
 
 | ID | Row | Citation | Status |
 |---|---|---|---|
-| C-AGENT-1 | A program's connections, each named, one current | `[CLIENT The SQL-agent]` | not yet |
-| C-AGENT-2 | CONNECT, through a connector the program gives, to the address and as the user it names | `[CLIENT The SQL-agent]` | not yet |
-| C-AGENT-3 | SET CONNECTION | `[CLIENT The SQL-agent]` | not yet |
-| C-AGENT-4 | DISCONNECT | `[CLIENT The SQL-agent]` | not yet |
-| C-AGENT-5 | Every other statement sent to the current connection | `[CLIENT The SQL-agent]` | not yet |
+| C-AGENT-1 | A program's connections, each named, one current | `[CLIENT The SQL-agent]` | done |
+| C-AGENT-2 | CONNECT, through a connector the program gives, to the address and as the user it names | `[CLIENT The SQL-agent]` | done |
+| C-AGENT-3 | SET CONNECTION | `[CLIENT The SQL-agent]` | done |
+| C-AGENT-4 | DISCONNECT | `[CLIENT The SQL-agent]` | done |
+| C-AGENT-5 | Every other statement sent to the current connection | `[CLIENT The SQL-agent]` | done |
 
 ---
 

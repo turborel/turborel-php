@@ -80,6 +80,14 @@ final class Names
         return implode('.', $parts);
     }
 
+    /** `$text` as an `<identifier>`, if it is one alone: a regular one in upper case, or a delimited one's body. */
+    public static function identifier(string $text): ?string
+    {
+        $tokens = self::tokens($text);
+
+        return $tokens !== null && \count($tokens) === 1 && $tokens[0][0] === 'identifier' ? $tokens[0][1] : null;
+    }
+
     /** The column `$heading` names: the `<identifier>` it is, if it is one, a key word too, in upper case; else as written. */
     public static function column(string $heading): string
     {

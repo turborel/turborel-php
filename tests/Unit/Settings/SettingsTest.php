@@ -61,6 +61,8 @@ final class SettingsTest extends CodecTestCase
         self::assertEquals([Host::tcp('db1', 7000), Host::tcp('::1', 7001), Host::tcp('db3', Settings::DEFAULT_PORT), Host::local('/run/s.sock')], $settings->hosts);
         self::assertSame([TlsMode::VerifyFull, TargetRole::ReadWrite, 5.0], [$settings->tlsMode, $settings->target, $settings->connectTimeout]);
         self::assertStringNotContainsString('p@ss', print_r($options, true) . print_r($settings, true), 'the password is never shown');
+        self::assertSame('ann', Settings::fromUri('turborel://ann@db1/?user=ann')->user, "the process's environment read");
+        self::assertTrue((new Options())->isEmpty());
         $bare = Settings::resolveIn(Options::fromUri('turborel://ann@/'), self::environment([]));
         self::assertEquals([Host::tcp(Settings::DEFAULT_HOST, Settings::DEFAULT_PORT)], $bare->hosts);
     }
