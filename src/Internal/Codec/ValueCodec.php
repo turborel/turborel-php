@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Codec;
 
+use Turborel\Internal\Codec\Json\Node;
 use Turborel\TurborelException;
 use Turborel\Value\ArrayValue;
 use Turborel\Value\Binary;
@@ -226,13 +227,17 @@ final class ValueCodec
     }
 
     /**
-     * A JSON value's stored form, checked whole.
+     * A JSON value's stored form, checked whole: of at most 256 MiB, nested at most 128 deep.
      *
-     * @throws TurborelException SQLSTATE 08006 if it is damaged
+     * @throws TurborelException SQLSTATE 08006 if it is damaged, or past either limit
      */
     private static function json(Reader $reader): Json
     {
-        $bytes = $reader->bytes();
+        $length = $reader->u32();
+        if ($length > Node::MAX_OCTETS) {
+            throw $reader->malformed("a JSON value's stored form is longer than 256 MiB");
+        }
+        $bytes = $reader->take($length);
         try {
             return new Json($bytes);
         } catch (TurborelException $damaged) {

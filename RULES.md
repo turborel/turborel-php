@@ -475,24 +475,27 @@ what PHP can:
   addresses, then the IPv6 addresses DNS gives, where turborel-client
   takes the system's addresses in the system's order.
 
-Where turborel-client departs from the behaviour turborel's documents set
-out, or would leave a connection out of step, the driver follows the
-documents:
+Where turborel-client is inconsistent, every Turborel driver does
+alike, as turborel's owner is told:
 
-- A value or condition a server sends that cannot be read, a JSON value
-  damaged or nested past 128, a truth value neither 0 nor 1, a length's
-  units neither characters nor octets, or a malformed condition in
-  Complete, loses the connection with SQLSTATE 08006, as a reply that
-  cannot be read does. turborel-client gives TB916 or 0A000 and keeps
-  the connection, the rest of the reply left unread, so the next request
-  would take it as its own.
-- Value tags 18 and 19, large objects in their stored layout, are
-  refused with 08006: no server sends them, though turborel-client's
-  reader takes them.
-- Attributes past the tail's bounds, more than 32, a name empty or past
-  64 bytes or a value past 1024, are refused before they are sent, with
-  08006, the connection kept; turborel-client sends them, and the server
+- A reply value that cannot be decoded loses the connection, SQLCODE
+  -919 and SQLSTATE 08006: a character or large object length's units
+  byte other than 0 or 1; a truth byte other than 0 or 1; a damaged
+  JSON document; JSON nested past 128, or over 256 MiB; a malformed
+  condition in Complete's tag 17. turborel-client gives TB916 or 0A000
+  on some of these paths and keeps the connection with the rest of the
+  reply unread, which leaves it out of step.
+- Value tags 18 and 19 are refused as malformed, -919 and 08006. They
+  are the server's stored form, never sent on the wire, though
+  turborel-protocol's reader takes them.
+- Attributes past their bounds, more than 32, a name empty or past 64
+  bytes or a value past 1024, are refused before they are sent, -919 and
+  08006, the connection kept. turborel-client sends them, and the server
   then fails the connection.
+
+Where turborel-client departs from the behaviour turborel's documents set
+out, the driver follows the documents:
+
 - Terminate waits at most 60 seconds for the server to close where the
   read timeout sets none, on a stream given to `open` too, as
   [CLIENT Connecting] says; turborel-client leaves such a stream as its

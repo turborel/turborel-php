@@ -154,8 +154,9 @@ final class ValueCodecTest extends CodecTestCase
      * Verifies: [PROTOCOL Values] [PROTOCOL Frames]: a value a reader
      * cannot take fails the connection: a tag of no value, a truth value
      * of 2, a displacement past an i16, a DECFLOAT not in its one form, a
-     * large object of no kind or a character one not UTF-8, damaged JSON,
-     * a UUID not of 16 octets, a multiset past 65535 elements.
+     * large object of no kind or a character one not UTF-8, damaged JSON
+     * or JSON past 256 MiB, tags 18 and 19 of the server's stored form, a
+     * UUID not of 16 octets, a multiset past 65535 elements (RULES.md D8).
      */
     #[Test]
     #[DataProvider('malformed')]
@@ -180,6 +181,9 @@ final class ValueCodecTest extends CodecTestCase
         yield 'a large object of kind 2' => ['14 02 00 00 00 00'];
         yield 'a character large object not UTF-8' => ['14 00 01 00 00 00 FF'];
         yield 'damaged JSON' => ['19 01 00 00 00 01'];
+        yield 'JSON past 256 MiB' => ['19 01 00 00 10'];
+        yield 'tag 18, a stored large object' => ['12'];
+        yield 'tag 19, a stored large object' => ['13'];
         yield 'a UUID of 15 octets' => ['1B 0F 00 00 00 ' . str_repeat('00 ', 15)];
         yield 'a multiset past 65535 elements' => ['16 00 00 01 00 ' . str_repeat('00 ', 65_536)];
         yield 'an array\'s count past its body' => ['10 FF FF FF FF'];
