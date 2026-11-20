@@ -17,8 +17,12 @@ use Turborel\Internal\Codec\Reply\Reply;
 use Turborel\Internal\Codec\Reply\Rows;
 use Turborel\Internal\Codec\Reply\Status;
 use Turborel\Internal\Codec\Reply\Suspended;
+use Turborel\Internal\Codec\Request\CopyData;
+use Turborel\Internal\Codec\Request\CopyEnd;
+use Turborel\Internal\Codec\Request\Ping;
 use Turborel\Internal\Codec\Request\Request;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Misuse;
 use Turborel\Internal\Transport\Stream;
 use Turborel\Session\Notice as PublicNotice;
 use Turborel\TurborelException;
@@ -53,6 +57,9 @@ final class Wire
     /** What the server has told beside the replies. */
     public Told $told;
 
+    /** Whether a copy is under way, when only its rows, its end and Ping are sent. */
+    public bool $copying = false;
+
     /** The number the next statement prepared takes, from 0, wrapping past a u32. */
     public int $nextStatement = 0;
 
@@ -65,12 +72,15 @@ final class Wire
     }
 
     /**
-     * Sends `$request`, compressed where granted.
+     * Sends `$request`, compressed where granted; while a copy is under way, only its rows, its end and Ping.
      *
-     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or is lost as it is sent
+     * @throws TurborelException SQLSTATE 08006 if the connection is lost, or is lost as it is sent; TB910 if a copy is under way
      */
     public function send(Request $request): void
     {
+        if ($this->copying && !$request instanceof CopyData && !$request instanceof CopyEnd && !$request instanceof Ping) {
+            throw Misuse::of('a copy is under way: only its rows, its end and Ping are sent until it ends');
+        }
         $this->sendBytes($request->encode());
     }
 

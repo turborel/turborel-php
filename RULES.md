@@ -448,6 +448,11 @@ rule here, the rule is kept:
   `version` out. It is kept, as D5 asks (D14).
 - PHPUnit can run tests in a random order. They run in their written
   order (R-TEST-5).
+- turborel-client's import and its sources fail with errors of their
+  own, which carry no SQLSTATE. Here they are `TurborelException`s too,
+  `SourceFailure` and `ImportFailure`: the input's of SQLSTATE 22000 and
+  SQLCODE -301, as every driver fails input that cannot be read, and an
+  SQL cause's of its own codes (R-ERR-1).
 - PHP itself raises a `TypeError`, under `strict_types`, when an argument
   is not of its declared type, before any of the driver's code runs; it
   is the program's error. Every value the driver checks itself fails as

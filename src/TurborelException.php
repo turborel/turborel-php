@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel;
 
+use Turborel\Internal\Codec\Cited;
 use Turborel\Internal\Codec\Failure;
 
 /**
@@ -58,6 +59,21 @@ class TurborelException extends \RuntimeException
         $exception->failure = $failure;
 
         return $exception;
+    }
+
+    /**
+     * The same failure, its position in its statement left out: of a statement the driver made, not the program.
+     *
+     * @internal
+     */
+    public function withoutPosition(): self
+    {
+        if ($this->failure === null) {
+            return $this;
+        }
+        $f = $this->failure;
+
+        return self::fromServer(new Failure($f->sqlcode, $f->sqlstate, $f->message, new Cited($f->cited->rule), $f->state));
     }
 
     /** The failure's SQLSTATE: five characters, its class the first two. */

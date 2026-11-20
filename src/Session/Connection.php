@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Turborel\Session;
 
+use Turborel\Copy\Copying;
+use Turborel\Copy\ExportFormat;
 use Turborel\Internal\Codec\Reply\Ready;
 use Turborel\Internal\ConnectionFailure;
+use Turborel\Internal\Copy\Exporter;
 use Turborel\Internal\Lobs\Lobs;
 use Turborel\Internal\Session\Control;
 use Turborel\Internal\Session\Ending;
@@ -379,6 +382,56 @@ final class Connection
     public function holdLob(LobLocator $lob): Completed
     {
         return (new Lobs($this->wire))->hold($lob);
+    }
+
+    /**
+     * Begins a copy into `$table`, as SQL names it, of `$columns`, all of the table's if none; under autocommit its own transaction
+     * [CLIENT Copying and exporting].
+     *
+     * @param list<string> $columns
+     *
+     * @throws TurborelException SQLSTATE 08006 if `copy` was not granted; the table not found comes as `finish`'s failure
+     */
+    public function copyIn(string $table, array $columns = []): Copying
+    {
+        return Copying::begin($this->wire, $table, $columns, $this->autocommit);
+    }
+
+    /**
+     * Copies the rows `$rows` gives into `$table`'s `$columns`: the rows inserted.
+     *
+     * @param list<string>             $columns
+     * @param iterable<list<mixed>>    $rows
+     *
+     * @throws TurborelException as `copyIn`'s and `Copying::finish`'s
+     */
+    public function copyRows(string $table, array $columns, iterable $rows): int|string
+    {
+        $copying = $this->copyIn($table, $columns);
+        foreach ($rows as $row) {
+            $copying->send($row);
+        }
+
+        return $copying->finish();
+    }
+
+    /**
+     * Runs the query `$sql` and writes its rows to `$out` as they come, as `$format` says: how many.
+     *
+     * @param resource $out
+     *
+     * @throws TurborelException the query's; SQLSTATE 08006 of a statement no query, or a write that failed, the export's then
+     */
+    public function export(string $sql, mixed $out, ExportFormat $format = ExportFormat::Csv): int
+    {
+        $exporter = new Exporter($out, $format);
+        $streamed = $this->queryInto($sql, $exporter);
+        if ($streamed->completed !== null) {
+            throw ConnectionFailure::because('an export runs a query');
+        }
+        $exporter->end();
+
+        return $streamed->rows;
     }
 
     /**

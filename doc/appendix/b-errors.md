@@ -19,6 +19,9 @@ characters of the SQLSTATE are its class.
 | 0A000 | -900 | JSON is past turborel's limits, nested more than 128 deep or a stored form past 256 MiB | no |
 | 2200N | -301 | An XML value's text is not well-formed content | no |
 | 07006 | -921 | The protocol has no value for a PHP value | no |
+| TB910 | -910 | The program misused the API where turborel-client has no case of it: a request other than a copy's rows, its end or Ping while the copy is under way, or a delimiter of no use | no |
+| 22000 | -301 | An import's input cannot be read, or does not fit the table: a record of too many or too few fields, a session with a transaction active, a table name that is not one | no |
+| 22001 | -301 | An import's string is longer than its column, found before it is sent | no |
 
 ## The server's
 

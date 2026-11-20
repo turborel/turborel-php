@@ -32,6 +32,7 @@
     "suggest": {
         "ext-bcmath": "Arithmetic on exact numbers, which the driver gives as strings",
         "ext-dom": "An XML value's nodes, parsed from its text",
+        "ext-mbstring": "Unicode's upper case of an import's names, ASCII's without it",
         "ext-zlib": "Compressed frames, the protocol's capability compression"
     },
     "require-dev": {
