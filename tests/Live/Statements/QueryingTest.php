@@ -7,6 +7,8 @@ namespace Turborel\Tests\Live\Statements;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\Test;
+use Turborel\Internal\Codec\Reply\Error;
+use Turborel\Internal\Codec\Request\Query;
 use Turborel\Session\Capability;
 use Turborel\Session\Connection;
 use Turborel\Session\Defaults;
@@ -96,6 +98,29 @@ final class QueryingTest extends LiveTestCase
             self::assertSame(['Q_KEYS_PRIMARY1', 'Q_KEYS', 'the key (1) is held by another row'], [$diagnostics['constraint'] ?? null, $diagnostics['table'] ?? null, $diagnostics['detail'] ?? null]);
         }
         self::assertCount(1, $connection->query('SELECT K FROM Q_KEYS')->rows);
+        $connection->terminate();
+    }
+
+    /**
+     * Verifies: [PROTOCOL Query 'Q'] [CLIENT Running statements]: a query
+     * that fails before its first batch is sent, dividing by zero on its
+     * first row, is answered by its Error alone, with no Description or
+     * Rows (SQLSTATE 22012), and the session goes on.
+     *
+     * @throws TurborelException never from the statements that succeed
+     */
+    #[Test]
+    public function aQueryFailingBeforeItsFirstBatchIsAnsweredByItsErrorAlone(): void
+    {
+        $connection = self::owner();
+        $connection->query('CREATE TABLE Q_ZERO (N INTEGER)');
+        $connection->query('INSERT INTO Q_ZERO VALUES (0), (1)');
+        $connection->wire()->send(new Query('SELECT 1 / N FROM Q_ZERO ORDER BY N'));
+        $reply = $connection->wire()->receive();
+        self::assertInstanceOf(Error::class, $reply);
+        self::assertSame('22012', $reply->failure->sqlstate);
+        self::assertFailure('22012', -301, static fn() => $connection->query('SELECT 1 / N FROM Q_ZERO ORDER BY N'));
+        self::assertSame([[1]], array_map(static fn(array $row): array => array_map(static fn(mixed $v): mixed => $v instanceof Exact ? (int) $v->units : $v, $row), $connection->query('SELECT N FROM Q_ZERO WHERE N = 1')->rows));
         $connection->terminate();
     }
 
