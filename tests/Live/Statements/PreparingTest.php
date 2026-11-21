@@ -237,7 +237,8 @@ final class PreparingTest extends LiveTestCase
      * Verifies: [CLIENT Prepared statements] [PROTOCOL Execute 'E']: each
      * `?` of an INSERT's rows takes its object column's type, so large
      * objects beside short literals are stored whole; a `?` cut to its
-     * type completes with warning 01004, its value cut.
+     * type completes with warning 01004, its value cut, an INSERT's, and a
+     * query's compared with a column, with ORDER BY or without.
      *
      * @throws TurborelException never from the statements
      */
@@ -253,6 +254,10 @@ final class PreparingTest extends LiveTestCase
         $connection->query('CREATE TABLE P_CUT (V VARCHAR(5))');
         $connection->execute($connection->prepare('INSERT INTO P_CUT VALUES (?)'), ['abcdefgh']);
         self::assertSame(['01004', [['abcde']]], [$connection->warning(), $connection->query('SELECT V FROM P_CUT')->rows]);
+        foreach (['SELECT V FROM P_CUT WHERE V = ?', 'SELECT V FROM P_CUT WHERE V = ? ORDER BY V'] as $sql) {
+            $found = $connection->execute($connection->prepare($sql), ['abcdefgh']);
+            self::assertSame([[['abcde']], '01004'], [$found->rows, $connection->warning()], $sql);
+        }
         $connection->terminate();
     }
 
