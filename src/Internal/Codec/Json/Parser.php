@@ -13,7 +13,9 @@ use Turborel\Value\Exact;
 /**
  * JSON text parsed to an item (the Encoder's), by RFC 8259's grammar, as
  * turborel parses it, WITHOUT UNIQUE KEYS: a number with no exponent is
- * exact, of at most 18 digits, or else a decimal floating-point number of
+ * exact, of at most 18 digits, those of 64 bits, as turborel's
+ * JSON_EXACT_DIGITS keeps them though an exact number holds 38, or else a
+ * decimal floating-point number of
  * at most 34 significant digits; one with an exponent is approximate. A
  * number turborel holds no number of is SQLSTATE 22003; text that does not
  * parse, SQLSTATE 22032.
@@ -40,7 +42,7 @@ final class Parser
     /** A `\u` escape's four hexadecimal digits. */
     private const string HEX4 = '/\G[0-9a-fA-F]{4}/';
 
-    /** The most digits of an exact number turborel parses from JSON: its MAX_EXACT_PRECISION. */
+    /** The most digits of an exact number turborel parses from JSON, those of 64 bits: its JSON_EXACT_DIGITS, though an exact number holds 38. */
     private const int MAX_EXACT_DIGITS = 18;
 
     /** The first and last high surrogates of a UTF-16 pair. */

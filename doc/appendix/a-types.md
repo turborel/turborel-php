@@ -59,8 +59,9 @@ datetime as `Datetime`, an array as a list, and an object as a
 `Json::fromValue()` takes the same, and an array with string keys as an
 object, a `\JsonSerializable` as what it serializes to, and a `Json` as
 its item. `Json::fromText()` reads JSON text as Turborel does: a number
-with no exponent is exact, of at most 18 digits, or a decimal
-floating-point number of at most 34 significant digits; one with an
+with no exponent is exact, of at most 18 digits, as Turborel parses
+JSON though an exact number holds 38, or a decimal floating-point number
+of at most 34 significant digits; one with an
 exponent is approximate; an object keeps every member, in order.
 
 ## Data types

@@ -20,7 +20,7 @@ final readonly class Exact implements SqlValue
     private const string NUMERAL = '/^([+-]?)([0-9]*)(?:\.([0-9]*))?$/';
 
     /** The largest scale written in digits, as turborel's MAX_EXACT_PRECISION: past it, the number is written with an exponent, as turborel writes it, so a scale the protocol allows cannot make its text without bound. */
-    private const int MAX_PLAIN_SCALE = 18;
+    private const int MAX_PLAIN_SCALE = 38;
 
     /** The largest scale: a u32. */
     private const int MAX_SCALE = 0xFFFF_FFFF;
@@ -62,8 +62,8 @@ final readonly class Exact implements SqlValue
 
     /**
      * The number written in digits, its point before its last `scale`
-     * digits, as `-0.005`; of a scale past 18, which no data type has, its
-     * units and an exponent, as `5E-20`, as turborel writes it.
+     * digits, as `-0.005`; of a scale past 38, which no data type has, its
+     * units and an exponent, as `5E-40`, as turborel writes it.
      */
     public function __toString(): string
     {

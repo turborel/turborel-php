@@ -31,7 +31,8 @@ checked as it is made. [Appendix A](../appendix/a-types.md) maps each
 tag to its class.
 
 An exact number keeps its units, an `i128`, as the string of their
-digits, and its scale, so every exact number Turborel holds reaches a
+digits, and its scale, so every exact number Turborel holds, of up to 38
+digits, past any PHP int, reaches a
 program with no loss: `(string) $price` writes it with its point,
 `-12.340`. A `DecFloat` is kept in Turborel's one form, its trailing
 zeros in its exponent. A `Json` holds its stored form, which `text()`

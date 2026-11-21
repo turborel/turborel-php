@@ -67,7 +67,7 @@ final class ValuesTest extends CodecTestCase
     /**
      * Verifies: [PROTOCOL Values] [DESIGN] D8: text that is no exact
      * number, units past an i128 and a scale past a u32 are refused
-     * (SQLSTATE 22003); a scale past 18, which no data type has, is shown
+     * (SQLSTATE 22003); a scale past 38, which no data type has, is shown
      * with an exponent, as turborel shows it.
      *
      * @throws TurborelException never from the number in range
@@ -81,7 +81,8 @@ final class ValuesTest extends CodecTestCase
         self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Exact => new Exact('1', -1));
         self::assertFailure(ValueFailure::OUT_OF_RANGE, ValueFailure::DATA, static fn(): Exact => new Exact('1', 0x1_0000_0000));
         self::assertSame('-5E-2000', (string) new Exact('-5', 2000));
-        self::assertSame(['0.000000000000000001', '1E-19', '-123E-25'], [(string) new Exact('1', 18), (string) new Exact('1', 19), (string) new Exact('-123', 25)]);
+        self::assertSame(['0.' . str_repeat('0', 37) . '1', '1E-39', '-123E-45'], [(string) new Exact('1', 38), (string) new Exact('1', 39), (string) new Exact('-123', 45)]);
+        self::assertSame('-12345678901234567890.123456789012345678', (string) new Exact('-12345678901234567890123456789012345678', 18));
     }
 
     /**

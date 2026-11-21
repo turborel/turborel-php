@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\Test;
 use Turborel\Tests\Support\LiveTestCase;
 use Turborel\TurborelException;
+use Turborel\Value\Exact;
 use Turborel\Value\Uuid;
 use Turborel\Value\Xml;
 
@@ -72,6 +73,31 @@ final class ValuesTest extends LiveTestCase
             return (string) $id;
         }, $connection->query('SELECT ID FROM V_TICKETS ORDER BY SEAT')->rows);
         self::assertSame(['919108f7-52d1-4320-9bac-f847db4148a8', '11111111-1111-1111-1111-111111111111'], $ids);
+        $connection->terminate();
+    }
+
+    /**
+     * Verifies: [PROTOCOL Values] [CLIENT Running statements]: an exact
+     * number of 38 digits, the most turborel holds, goes as a parameter and
+     * comes back as a result whole, its units a string, never a float; one
+     * of 39 digits is refused (SQLSTATE 22003); 1/3 is 0.333333, a
+     * quotient's scale as turborel gives it.
+     *
+     * @throws TurborelException never from the numbers of 38 digits
+     */
+    #[Test]
+    public function anExactNumberOf38DigitsGoesAndComesWhole(): void
+    {
+        $connection = self::owner();
+        $connection->query('CREATE TABLE V_WIDE (N NUMERIC(38,0), D NUMERIC(38,10))');
+        $insert = $connection->prepare('INSERT INTO V_WIDE VALUES (?, ?)');
+        $connection->execute($insert, [new Exact('-' . str_repeat('9', 38), 0), Exact::fromString('1234567890123456789012345678.0123456789')]);
+        $row = $connection->query('SELECT N, D FROM V_WIDE')->rows[0] ?? [];
+        self::assertSame(['-' . str_repeat('9', 38), '1234567890123456789012345678.0123456789'], array_map(static fn(mixed $v): string => $v instanceof Exact ? (string) $v : '', $row));
+        self::assertFailure('22003', -301, static fn() => $connection->execute($insert, [new Exact(str_repeat('9', 39), 0), null]));
+        $third = ($connection->query('VALUES 1/3')->rows[0] ?? [])[0] ?? null;
+        self::assertInstanceOf(Exact::class, $third);
+        self::assertSame('0.333333', (string) $third);
         $connection->terminate();
     }
 }
