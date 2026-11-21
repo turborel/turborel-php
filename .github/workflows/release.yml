@@ -1,6 +1,6 @@
 # Builds and checks the package a release would publish, and publishes
 # nothing (VERSIONING.md, Publishing). It runs only by hand. The publish job
-# is written but disabled: the owner enables it once every turborel driver
+# is written but disabled: a maintainer enables it once every turborel driver
 # is done, and not before.
 name: release
 
@@ -42,9 +42,9 @@ jobs:
           path: build/release/turborel-php.zip
 
   publish:
-    # Disabled: the owner enables this job, by removing this line, once
+    # Disabled: a maintainer enables this job, by removing this line, once
     # every driver is done (VERSIONING.md). Packagist reads the release from
-    # its git tag, which the owner pushes; this asks Packagist to read it.
+    # its git tag, which a maintainer pushes; this asks Packagist to read it.
     if: false
     needs: package
     runs-on: ubuntu-latest

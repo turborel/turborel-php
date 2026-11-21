@@ -243,7 +243,7 @@ The tools named by "the formatter", "the linters", "the type checker" and
 | R-PROC-4 | A threshold change **shall** change RULES.md and the configuration that holds it together. | review |
 | R-PROC-5 | Project automation **shall** be written in the language's own tooling, never shell scripts; the git hook only hands over to the checks tool. | review |
 | R-PROC-6 | CI's actions **shall** be pinned by their full commit SHA, with the version in a comment. | review |
-| R-PROC-7 | A release **shall** be published only as VERSIONING.md says, by the owner (D5). | review |
+| R-PROC-7 | A release **shall** be published only as VERSIONING.md says, by a maintainer (D5). | review |
 
 The review checklist:
 
@@ -382,7 +382,7 @@ is 0.0.0, as Turborel's is, and speaks protocol version 1.
 
 The number is written once, in composer.json's `version`. Nothing is
 published, and no release is tagged, until every Turborel driver is
-done; then the owner publishes them together (VERSIONING.md).
+done; then the maintainers publish them together (VERSIONING.md).
 
 #### D6. Tests and code cite Turborel's documents by their headings
 
@@ -458,8 +458,8 @@ rule here, the rule is kept:
   is the program's error. Every value the driver checks itself fails as
   `TurborelException` (R-ERR-1).
 
-Where PHP cannot do what turborel-client does, the driver does as
-turborel's owner decided (2026-11-19):
+Where PHP cannot do what turborel-client does, the driver does what the
+server takes:
 
 - SCRAM-SHA-256-PLUS binds by `tls-server-end-point` over TLS 1.2 and
   1.3 alike, where turborel-client binds by `tls-exporter` over TLS 1.3.
@@ -477,7 +477,7 @@ what PHP can:
   takes the system's addresses in the system's order.
 
 Where turborel-client is inconsistent, every Turborel driver does
-alike, as turborel's owner is told:
+alike, so a program sees the same behaviour from each:
 
 - Value tags 18 and 19 are refused as values the driver cannot take,
   SQLCODE -916 and SQLSTATE TB916: the request fails, its other replies
