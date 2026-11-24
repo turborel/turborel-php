@@ -45,18 +45,18 @@ final class LexerTest extends CodecTestCase
      * Verifies: [CLIENT The SQL-agent]: text that is no tokens is refused
      * with SQLCODE -101, an empty delimited identifier with -102 and an
      * identifier of more than 128 characters with -103, each SQLSTATE
-     * 2A000, its message as turborel's.
+     * 42000, its message as turborel's.
      */
     #[Test]
     public function textThatIsNoTokensIsRefused(): void
     {
         $lexical = ["'open", "'a\nb'", "\"a\nb\"", '"open', '/* open', '-- no newline', 'a != b', "a\tb", '1a', '@', "X'0'", "X'zz'"];
         foreach ($lexical as $text) {
-            self::assertFailure('2A000', -101, static fn(): array => Lexer::lex($text));
+            self::assertFailure('42000', -101, static fn(): array => Lexer::lex($text));
         }
-        self::assertFailure('2A000', -102, static fn(): array => Lexer::lex('""'));
-        self::assertFailure('2A000', -103, static fn(): array => Lexer::lex(str_repeat('a', 129)));
-        self::assertFailure('2A000', -103, static fn(): array => Lexer::lex('"' . str_repeat('a', 129) . '"'));
+        self::assertFailure('42000', -102, static fn(): array => Lexer::lex('""'));
+        self::assertFailure('42000', -103, static fn(): array => Lexer::lex(str_repeat('a', 129)));
+        self::assertFailure('42000', -103, static fn(): array => Lexer::lex('"' . str_repeat('a', 129) . '"'));
         $messages = ["a\tb" => "\"a\" must be followed by a <delimiter token> or a <separator>, not '\\t'", '@' => "character '@' cannot start a <token>"];
         foreach ($messages as $text => $message) {
             try {

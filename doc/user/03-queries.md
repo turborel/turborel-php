@@ -118,7 +118,7 @@ echo count($ran->outcomes), ' ran; then ', $ran->failure->getSqlState(), ': ', $
 ```
 
 ```text
-2 ran; then 2A000: table ANN.NOPE is not defined
+2 ran; then 42000: table ANN.NOPE is not defined
 ```
 
 ## Query attributes

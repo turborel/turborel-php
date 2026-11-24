@@ -47,7 +47,7 @@ final class WindowsTest extends CodecTestCase
      * reads them: a literal's continuations joined across a newline, a
      * national literal's text taken, a semicolon after taken; any other
      * statement is none; text that is no tokens fails with SQLCODE -101,
-     * one that does not parse with -102 (SQLSTATE 2A000), and a variable
+     * one that does not parse with -102 (SQLSTATE 42000), and a variable
      * specification or a character set not SQL_TEXT as valid SQL not
      * implemented (SQLSTATE 0A000).
      *
@@ -69,10 +69,10 @@ final class WindowsTest extends CodecTestCase
             self::assertNull(Parser::statement($other));
         }
         foreach (['CONNECT', "CONNECT TO 'a' AS", "DISCONNECT 'a' 'b' x", 'SET CONNECTION', "CONNECT TO 'a' ~", 'DISCONNECT ?', "CONNECT TO 'a' 'b'"] as $wrong) {
-            self::assertFailure('2A000', -102, static fn(): ?Statement => Parser::statement($wrong));
+            self::assertFailure('42000', -102, static fn(): ?Statement => Parser::statement($wrong));
         }
         foreach (["CONNECT\tTO 'x'", 'DISCONNECT ALL -- bye', "SELECT 'abc"] as $unlexed) {
-            self::assertFailure('2A000', -101, static fn(): ?Statement => Parser::statement($unlexed));
+            self::assertFailure('42000', -101, static fn(): ?Statement => Parser::statement($unlexed));
         }
         foreach (['DISCONNECT :x', "CONNECT TO _LATIN1'abc'"] as $unimplemented) {
             self::assertFailure('0A000', -900, static fn(): ?Statement => Parser::statement($unimplemented));

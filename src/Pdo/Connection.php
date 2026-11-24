@@ -92,7 +92,7 @@ final class Connection
      *
      * @param array<int, mixed> $options none is taken
      *
-     * @throws TurborelException the server's, as SQLSTATE 37000 of a statement not preparable
+     * @throws TurborelException the server's, as SQLSTATE 42000 of a statement not preparable
      */
     public function prepare(string $sql, array $options = []): Statement
     {

@@ -80,7 +80,8 @@ final class ValuesTest extends LiveTestCase
      * Verifies: [PROTOCOL Values] [CLIENT Running statements]: an exact
      * number of 38 digits, the most turborel holds, goes as a parameter and
      * comes back as a result whole, its units a string, never a float; one
-     * of 39 digits is refused (SQLSTATE 22003); 1/3 is 0.333333, a
+     * of 39 digits is refused, a parameter or text cast with SQLSTATE 22003,
+     * a literal with 42000 and SQLCODE -103; 1/3 is 0.333333, a
      * quotient's scale as turborel gives it.
      *
      * @throws TurborelException never from the numbers of 38 digits
@@ -95,6 +96,8 @@ final class ValuesTest extends LiveTestCase
         $row = $connection->query('SELECT N, D FROM V_WIDE')->rows[0] ?? [];
         self::assertSame(['-' . str_repeat('9', 38), '1234567890123456789012345678.0123456789'], array_map(static fn(mixed $v): string => $v instanceof Exact ? (string) $v : '', $row));
         self::assertFailure('22003', -301, static fn() => $connection->execute($insert, [new Exact(str_repeat('9', 39), 0), null]));
+        self::assertFailure('42000', -103, static fn() => $connection->query('VALUES ' . str_repeat('9', 39)));
+        self::assertFailure('22003', -301, static fn() => $connection->query("VALUES CAST('" . str_repeat('9', 41) . "' AS DECIMAL(5))"));
         $third = ($connection->query('VALUES 1/3')->rows[0] ?? [])[0] ?? null;
         self::assertInstanceOf(Exact::class, $third);
         self::assertSame('0.333333', (string) $third);

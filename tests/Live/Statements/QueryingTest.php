@@ -83,7 +83,7 @@ final class QueryingTest extends LiveTestCase
             $connection->query('SELECT * FROM NOPE');
             self::fail('a table not defined');
         } catch (TurborelException $failure) {
-            self::assertSame(['2A000', -103, 'table ANN.NOPE is not defined', 14], [$failure->getSqlState(), $failure->getSqlCode(), $failure->getMessage(), $failure->getPosition()]);
+            self::assertSame(['42000', -103, 'table ANN.NOPE is not defined', 14], [$failure->getSqlState(), $failure->getSqlCode(), $failure->getMessage(), $failure->getPosition()]);
             self::assertSame('X3.135-1986 §5.4 SR5', $failure->getRule());
             self::assertSame(['severity' => 'ERROR', 'schema' => 'ANN', 'table' => 'NOPE'], $failure->getDiagnostics());
         }
@@ -142,7 +142,7 @@ final class QueryingTest extends LiveTestCase
         $streamed = $connection->queryInto('SELECT A.N FROM Q_TEN A, Q_TEN B, Q_TEN C, Q_TEN D', $counter);
         self::assertSame([10_000, 10_000, null, ['N']], [$streamed->rows, $counter->rows, $streamed->completed, $counter->columns]);
         self::assertGreaterThan(1, $counter->batches);
-        self::assertFailure('2A000', -103, static fn() => $connection->queryInto('SELECT * FROM NOPE', new Counter()));
+        self::assertFailure('42000', -103, static fn() => $connection->queryInto('SELECT * FROM NOPE', new Counter()));
         $connection->terminate();
     }
 
@@ -193,7 +193,7 @@ final class QueryingTest extends LiveTestCase
         self::assertTrue($connection->inTransaction());
         $connection->query('ROLLBACK');
         self::assertFalse($connection->inTransaction());
-        self::assertFailure('2A000', -103, static fn() => $other->query('SELECT N FROM Q_TX'));
+        self::assertFailure('42000', -103, static fn() => $other->query('SELECT N FROM Q_TX'));
         $connection->setAutocommit(true);
         $connection->query('CREATE TABLE Q_TX (N INTEGER)');
         $connection->query('INSERT INTO Q_TX VALUES (1)');
@@ -246,7 +246,7 @@ final class QueryingTest extends LiveTestCase
         $ran = $connection->queryMany('CREATE TABLE Q_MANY (N INTEGER); INSERT INTO Q_MANY VALUES (1); SELECT N FROM Q_MANY; SELECT * FROM NOPE; INSERT INTO Q_MANY VALUES (2)');
         self::assertCount(3, $ran->outcomes);
         self::assertSame([true, true, true], array_map(static fn($outcome): bool => $outcome->completed?->more() ?? false, $ran->outcomes));
-        self::assertSame('2A000', $ran->failure?->getSqlState());
+        self::assertSame('42000', $ran->failure?->getSqlState());
         self::assertSame([['1']], array_map(static fn(array $row): array => [self::units($row[0] ?? null)], $connection->query('SELECT N FROM Q_MANY')->rows));
         $empty = $connection->queryMany('');
         self::assertSame([1, '00000', null], [\count($empty->outcomes), ($empty->outcomes[0] ?? null)?->completed?->sqlstate(), $empty->failure]);

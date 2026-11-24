@@ -54,7 +54,7 @@ try {
 ```text
 1 Ada
 2 Grace
-2A000 -103: table ANN.NOPE is not defined
+42000 -103: table ANN.NOPE is not defined
 ```
 
 An exact number comes as a `Turborel\Value\Exact`, its digits `units`

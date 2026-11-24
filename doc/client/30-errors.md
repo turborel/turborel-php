@@ -76,7 +76,7 @@ try {
 ```
 
 ```text
-2A000 -103 at 14: table ANN.NOPE is not defined
+42000 -103 at 14: table ANN.NOPE is not defined
 X3.135-1986 §5.4 SR5, ends the connection: false
 ```
 

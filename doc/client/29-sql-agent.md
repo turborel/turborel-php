@@ -58,7 +58,7 @@ every one.
 | 08001 | -919 | A server the connector cannot reach |
 | 08004 | -919 | A server that refuses the connection |
 | 25000 | -917 | DISCONNECT of a connection whose transaction is active |
-| 2A000 | -102, -103 | A connection statement that does not parse, or names by no character string literal |
+| 42000 | -102, -103 | A connection statement that does not parse, or names by no character string literal |
 
 ## EXAMPLES
 

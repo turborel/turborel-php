@@ -112,7 +112,7 @@ final class Lexer
      *
      * @return list<array{string, string, int, int}>
      *
-     * @throws TurborelException SQLSTATE 2A000, SQLCODE -101, of text that is no tokens; -102 of an empty delimited identifier; -103 of an identifier too long
+     * @throws TurborelException SQLSTATE 42000, SQLCODE -101, of text that is no tokens; -102 of an empty delimited identifier; -103 of an identifier too long
      */
     public static function lex(string $text): array
     {
@@ -564,9 +564,9 @@ final class Lexer
         return $quote . $escaped . $quote;
     }
 
-    /** The failure of SQLCODE `$code`, citing `$rule`, `$message`, at character `$at`: SQLSTATE 2A000 of SQL text. */
+    /** The failure of SQLCODE `$code`, citing `$rule`, `$message`, at character `$at`: SQLSTATE 42000 of SQL text. */
     private static function failure(int $code, string $rule, string $message, int $at): TurborelException
     {
-        return TurborelException::fromServer(new Failure($code, '2A000', $message, new Cited($rule, $at), new FailureState(false, new Diagnostics(['severity' => Diagnostics::ERROR]))));
+        return TurborelException::fromServer(new Failure($code, '42000', $message, new Cited($rule, $at), new FailureState(false, new Diagnostics(['severity' => Diagnostics::ERROR]))));
     }
 }

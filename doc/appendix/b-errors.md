@@ -26,7 +26,7 @@ characters of the SQLSTATE are its class.
 | 0A001 | -900 | The SQL-agent's CONNECT or SET CONNECTION within an active transaction | no |
 | 28000 | -104 | The SQL-agent's CONNECT of a user that is no authorization identifier | no |
 | 25000 | -917 | The SQL-agent's DISCONNECT of a connection in a transaction | no |
-| 2A000 | -101, -102, -103 | The SQL-agent's statement that is no tokens, as turborel's lexer refuses it (-101); its connection statement that does not parse, or names by no character string literal | no |
+| 42000 | -101, -102, -103 | The SQL-agent's statement that is no tokens, as turborel's lexer refuses it (-101); its connection statement that does not parse, or names by no character string literal | no |
 | 0A000 | -900 | The SQL-agent's connection statement of a variable specification, or a literal of a character set other than SQL_TEXT | no |
 | 22000 | -301 | An import's input cannot be read, or does not fit the table: a record of too many or too few fields, a session with a transaction active, a table name that is not one | no |
 | 22001 | -301 | An import's string is longer than its column, found before it is sent | no |
@@ -47,8 +47,8 @@ program meets most:
 | 24 | An invalid cursor state | no |
 | 26 | An invalid SQL statement name: a prepared statement that is no more | no |
 | 28 | Credentials refused: SQLCODE -919 as a connection is made, or as a change of user is refused | yes, of SQLCODE -919 |
-| 2A | A syntax error or access rule violation | no |
 | 40 | A transaction rollback, as 40002 of a commit that fails | no |
+| 42 | A syntax error or access rule violation, run or prepared, as 42000 of a table not defined; its SQLCODE tells which rule | no |
 | TB | turborel's own: TB920, SQLCODE -920, a statement cancelled; TBR01, SQLCODE -920, a replica that had not applied REPLICATION.READ_AFTER's position in time | no |
 
 A notice of the server's own comes as a `Turborel\Session\Notice`, never

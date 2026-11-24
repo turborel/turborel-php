@@ -158,7 +158,7 @@ final class PoolTest extends LiveTestCase
         self::assertSame([1, 1], $pool->counts());
         $again = $pool->get();
         self::assertFalse($again->connection()->inTransaction());
-        self::assertFailure('2A000', -103, static fn() => $again->connection()->query('SELECT N FROM PO_GONE'));
+        self::assertFailure('42000', -103, static fn() => $again->connection()->query('SELECT N FROM PO_GONE'));
         self::assertFailure('26000', -921, static fn() => $again->connection()->execute($statement));
         self::assertSame(0, $again->connection()->wire()->nextStatement);
         $again->release();

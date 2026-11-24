@@ -158,10 +158,10 @@ final class PdoTest extends LiveTestCase
             $pdo->exec('SELECT * FROM NOPE');
             self::fail('no table');
         } catch (TurborelException $failure) {
-            self::assertSame(['2A000', -103], [$failure->getSqlState(), $failure->getSqlCode()]);
-            self::assertSame(['2A000', -103, 'table ANN.NOPE is not defined'], $failure->errorInfo());
+            self::assertSame(['42000', -103], [$failure->getSqlState(), $failure->getSqlCode()]);
+            self::assertSame(['42000', -103, 'table ANN.NOPE is not defined'], $failure->errorInfo());
         }
-        self::assertSame(['2A000', ['2A000', -103, 'table ANN.NOPE is not defined']], [$pdo->errorCode(), $pdo->errorInfo()]);
+        self::assertSame(['42000', ['42000', -103, 'table ANN.NOPE is not defined']], [$pdo->errorCode(), $pdo->errorInfo()]);
         $pdo->exec('VALUES 1');
         self::assertSame(['00000', ['00000', null, null]], [$pdo->errorCode(), $pdo->prepare('VALUES 1')->errorInfo()]);
         self::assertSame('00000', $pdo->prepare('VALUES 1')->errorCode());

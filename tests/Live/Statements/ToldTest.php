@@ -133,7 +133,7 @@ final class ToldTest extends LiveTestCase
         $notice = $connection->takeNotices()[0] ?? null;
         self::assertSame(['01T01', 'NOTICE', false], [$notice?->sqlState, $notice?->severity(), $connection->inTransaction()]);
         self::assertFailure('26000', -921, static fn() => $connection->execute($one));
-        self::assertFailure('2A000', -103, static fn() => $connection->query('SELECT N FROM T_RESET'));
+        self::assertFailure('42000', -103, static fn() => $connection->query('SELECT N FROM T_RESET'));
         self::assertSame('ANN', $connection->authorization());
         $connection->query('ROLLBACK');
         $connection->reset();

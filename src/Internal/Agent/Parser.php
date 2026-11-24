@@ -42,7 +42,7 @@ final class Parser
     /**
      * The connection statement `$sql` is; none if it is another.
      *
-     * @throws TurborelException SQLSTATE 2A000 if it is no tokens, or a connection statement that does not parse; 0A000 of valid SQL not implemented
+     * @throws TurborelException SQLSTATE 42000 if it is no tokens, or a connection statement that does not parse; 0A000 of valid SQL not implemented
      */
     public static function statement(string $sql): ?Statement
     {
@@ -68,7 +68,7 @@ final class Parser
     /**
      * CONNECT TO `<SQL-server name>` [AS `<connection name>`] [USER `<user name>`], or TO DEFAULT.
      *
-     * @throws TurborelException SQLSTATE 2A000 if it does not parse
+     * @throws TurborelException SQLSTATE 42000 if it does not parse
      */
     private function connect(): Statement
     {
@@ -91,7 +91,7 @@ final class Parser
     /**
      * SET CONNECTION `<connection object>`: DEFAULT or a name.
      *
-     * @throws TurborelException SQLSTATE 2A000 if it does not parse
+     * @throws TurborelException SQLSTATE 42000 if it does not parse
      */
     private function set(): Statement
     {
@@ -107,7 +107,7 @@ final class Parser
     /**
      * DISCONNECT `<disconnect object>`: DEFAULT, ALL, CURRENT or a name.
      *
-     * @throws TurborelException SQLSTATE 2A000 if it does not parse
+     * @throws TurborelException SQLSTATE 42000 if it does not parse
      */
     private function disconnect(): Statement
     {
@@ -124,7 +124,7 @@ final class Parser
     /**
      * A `<simple value specification>`: a literal, a character string literal's text kept; a variable specification is refused.
      *
-     * @throws TurborelException SQLSTATE 0A000 of a variable specification; 2A000 if no literal is next
+     * @throws TurborelException SQLSTATE 0A000 of a variable specification; 42000 if no literal is next
      */
     private function value(): Value
     {
@@ -190,7 +190,7 @@ final class Parser
     /**
      * The statement's end, after one semicolon if written; then a refusal of valid SQL not implemented read in it, if any.
      *
-     * @throws TurborelException SQLSTATE 2A000 if more follows; 0A000 of valid SQL not implemented
+     * @throws TurborelException SQLSTATE 42000 if more follows; 0A000 of valid SQL not implemented
      */
     private function end(): void
     {
@@ -220,7 +220,7 @@ final class Parser
     /**
      * That the key word `$word` is next, taken.
      *
-     * @throws TurborelException SQLSTATE 2A000 if another is
+     * @throws TurborelException SQLSTATE 42000 if another is
      */
     private function expect(string $word): void
     {
@@ -266,7 +266,7 @@ final class Parser
             default => $text,
         };
 
-        return self::failure(-102, '2A000', null, "{$message}, found {$found}", $this->here());
+        return self::failure(-102, '42000', null, "{$message}, found {$found}", $this->here());
     }
 
     /** The failure of SQLCODE `$code` and SQLSTATE `$state`, citing `$rule`, `$message`, at character `$at`. */

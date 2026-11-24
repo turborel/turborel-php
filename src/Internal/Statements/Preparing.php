@@ -50,7 +50,7 @@ final readonly class Preparing
     /**
      * Prepares `$sql`, its dynamic parameters written `?`, under the connection's next number [PROTOCOL Prepare 'P'].
      *
-     * @throws TurborelException the server's, as SQLSTATE 37000 of a statement not preparable, or SQLSTATE 08006
+     * @throws TurborelException the server's, as SQLSTATE 42000 of a statement not preparable, or SQLSTATE 08006
      */
     public function prepare(string $sql): Statement
     {

@@ -96,7 +96,7 @@ final class CopyTest extends LiveTestCase
             $connection->copyIn('C_ALL')->send([5, 'e']);
         })($connection);
         self::assertSame([['kept']], $connection->query('SELECT S FROM C_ALL')->rows);
-        self::assertFailure('37000', -103, static fn() => $connection->copyRows('C_NOPE', [], [[1]]));
+        self::assertFailure('42000', -103, static fn() => $connection->copyRows('C_NOPE', [], [[1]]));
         $connection->terminate();
     }
 

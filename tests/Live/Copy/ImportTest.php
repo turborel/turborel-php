@@ -105,7 +105,7 @@ final class ImportTest extends LiveTestCase
         self::assertFailure('22000', -301, static fn() => Import::into('I_STOP')->run($connection, self::csv("1,a\n")));
         $connection->query('ROLLBACK');
         self::assertFailure('22000', -301, static fn() => Import::into('I_STOP.')->run($connection, self::csv("1,a\n")));
-        self::assertFailure('37000', -103, static fn() => Import::into('I_NOPE')->run($connection, self::csv("1,a\n")));
+        self::assertFailure('42000', -103, static fn() => Import::into('I_NOPE')->run($connection, self::csv("1,a\n")));
         $without = Connection::connect(self::tcp(), 'ann', new Trust(), null, new Offer(array_values(array_diff(Defaults::CAPABILITIES, [Capability::COPY]))));
         try {
             (new Import('I_STOP', 2))->run($without, self::csv("1,a\n2,b\n3,c\n4\n"));

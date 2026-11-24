@@ -255,7 +255,7 @@ final class Agent
     /**
      * The text `$value` is, its spaces trimmed; none of none.
      *
-     * @throws TurborelException SQLSTATE 2A000 of a value that is no character string literal
+     * @throws TurborelException SQLSTATE 42000 of a value that is no character string literal
      */
     private static function text(?Value $value): ?string
     {
@@ -263,7 +263,7 @@ final class Agent
             return null;
         }
         if (!$value->literal) {
-            throw new TurborelException("a client's connection statement names by character string literals", '2A000', -103);
+            throw new TurborelException("a client's connection statement names by character string literals", '42000', -103);
         }
 
         return trim($value->text, ' ');
@@ -272,7 +272,7 @@ final class Agent
     /**
      * The connection name `$value` gives: the identifier it is, if it is one, else its text; none of none.
      *
-     * @throws TurborelException SQLSTATE 2A000 of a value that is no character string literal
+     * @throws TurborelException SQLSTATE 42000 of a value that is no character string literal
      */
     private static function name(?Value $value): ?string
     {
