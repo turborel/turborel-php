@@ -39,7 +39,7 @@ use Turborel\Value\LobKind;
 
 /**
  * Turborel's sample frames, `doc/client/05-protocol-frames.tsv`, copied
- * into the fixtures at Turborel's commit 045e42a9 (RULES.md D12): every
+ * into the fixtures at Turborel's commit 1afa44c2 (RULES.md D12): every
  * server frame decoded as its meaning says, every client frame encoded
  * byte for byte, and the compressed ones inflated.
  */
@@ -49,7 +49,7 @@ use Turborel\Value\LobKind;
 #[CoversClass(TurborelException::class)]
 final class SampleFramesTest extends CodecTestCase
 {
-    /** The copy of the file, at Turborel's commit 045e42a9. */
+    /** The copy of the file, at Turborel's commit 1afa44c2. */
     private const string FILE = __DIR__ . '/../../../Fixtures/05-protocol-frames.tsv';
 
     /**
@@ -75,7 +75,7 @@ final class SampleFramesTest extends CodecTestCase
             $names[] = $name;
         }
         self::assertSame(array_unique($names), $names, 'each name once');
-        self::assertCount(147, $names);
+        self::assertCount(148, $names);
     }
 
     /**
@@ -98,6 +98,8 @@ final class SampleFramesTest extends CodecTestCase
                 $decoded[$name] = [Said::of(Replies::decode($kind, $body))];
             }
         }
+        ksort($expected);
+        ksort($decoded);
         self::assertSame($expected, array_intersect_key($decoded, $expected));
         self::assertSame(array_keys($decoded), array_keys(array_intersect_key($decoded, $expected)), 'every server frame expected');
     }
@@ -217,6 +219,7 @@ final class SampleFramesTest extends CodecTestCase
         yield 'prepared' => ['Prepared 1, parameters CHARACTER VARYING(32767) varying, NUMERIC(10,0); columns K NUMERIC(10,0) NOT NULL, ? CHARACTER VARYING(5)'];
         yield 'prepared-empty' => ['Prepared 2, parameters ; columns '];
         yield 'prepared-declared' => ['Prepared 1, parameters CHARACTER VARYING(32767) varying, NUMERIC(10,0); columns K NUMERIC(10,0) NOT NULL declared INTEGER/INTEGER'];
+        yield 'prepared-called' => ['Prepared 3, parameters NUMERIC(10,0); columns G NUMERIC(10,0) NOT NULL; called S.P: IN 1 NUMERIC(10,0), OUT 2 NUMERIC(10,0)'];
         yield 'description' => ['Description columns K NUMERIC(10,0) NOT NULL, ? CHARACTER VARYING(5)'];
         yield 'description-empty' => ['Description columns '];
         yield 'description-declared' => ['Description columns I NUMERIC(10,0) NOT NULL declared INTEGER/INTEGER, S NUMERIC(5,0) declared SMALLINT/SMALLINT, B NUMERIC(18,0) declared BIGINT/BIGINT, D NUMERIC(9,2) declared DECIMAL/DECIMAL(9,2), R FLOAT(24) declared REAL/REAL, P FLOAT(53) declared DOUBLE PRECISION/DOUBLE PRECISION, M NUMERIC(9,2) declared USER-DEFINED/S.MONEY'];

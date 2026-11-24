@@ -168,6 +168,30 @@ final class PdoTest extends LiveTestCase
     }
 
     /**
+     * Verifies: [DESIGN] D2 [CLIENT Prepared statements] [PROTOCOL Parameter modes]:
+     * a CALL's IN parameter is bound by value, its OUT and INOUT ones by
+     * bindParam with PARAM_INPUT_OUTPUT; executed, only IN and INOUT values
+     * are sent, and the OUT and INOUT values come back to the variables.
+     *
+     * @throws TurborelException never from the statements
+     */
+    #[Test]
+    public function aCallsOutputParametersComeBackToTheirVariables(): void
+    {
+        $pdo = new Connection(self::uri());
+        $pdo->exec('CREATE PROCEDURE PDO_OUT(IN A INTEGER, OUT B INTEGER, INOUT C INTEGER) LANGUAGE SQL MODIFIES SQL DATA BEGIN SET B = A * 2; SET C = C + 1; END');
+        $call = $pdo->prepare('CALL PDO_OUT(?, ?, ?)');
+        [$doubled, $counted] = [null, 10];
+        $call->bindValue(1, 3, Pdo::PARAM_INT);
+        $call->bindParam(2, $doubled, Pdo::PARAM_INT | Pdo::PARAM_INPUT_OUTPUT);
+        $call->bindParam(3, $counted, Pdo::PARAM_INT | Pdo::PARAM_INPUT_OUTPUT);
+        $call->execute();
+        self::assertSame([6, 11], [$doubled, $counted]);
+        $call->execute();
+        self::assertSame([6, 12], [$doubled, $counted]);
+    }
+
+    /**
      * The live server's URI, as ANN over TCP without TLS.
      *
      * @throws TurborelException if the server cannot be set up

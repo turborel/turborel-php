@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Turborel\Internal\Codec;
 
 use Turborel\TurborelException;
+use Turborel\Type\Called;
 use Turborel\Type\Column;
 use Turborel\Type\Declared;
 use Turborel\Type\Parameter;
+use Turborel\Type\ParameterMode;
 
 /**
  * The composite fields messages are made of: rows, columns and
@@ -48,8 +50,8 @@ final class Fields
     }
 
     /**
-     * `$columns`, each with its declared type where the tail of a Prepared or a Description tells it, tag 19: a count, then
-     * of each column its type's name and its type as SQL writes it [PROTOCOL Declared types].
+     * `$columns`, each with its declared type where the tail of a Description tells it, tag 19: a count, then of each
+     * column its type's name and its type as SQL writes it [PROTOCOL Declared types].
      *
      * @param list<Column> $columns
      *
@@ -61,17 +63,78 @@ final class Fields
     {
         $tail = new Tail();
         while ($tail->next($reader, [Tail::DECLARED]) !== null) {
-            $declared = [];
-            for ($count = $reader->u32(); $count > 0; $count--) {
-                $declared[] = new Declared($reader->string(), $reader->string());
-            }
-            if (\count($declared) !== \count($columns)) {
-                throw $reader->malformed('its declared types are not one for each column');
-            }
-            $columns = array_map(static fn(Column $c, Declared $d): Column => $c->withDeclared($d), $columns, $declared);
+            $columns = self::withDeclared($reader, $columns);
         }
 
         return $columns;
+    }
+
+    /**
+     * The tail of a Prepared: `$columns`, each with its declared type where tag 19 tells it, and, where tag 20 tells it,
+     * what a CALL tells of its procedure and each of its `?` marks [PROTOCOL Prepared 'P'].
+     *
+     * @param list<Column> $columns
+     *
+     * @return array{list<Column>, ?Called}
+     *
+     * @throws TurborelException SQLSTATE 08006 if the tail is malformed, a mode is of no code, or a position 0
+     */
+    public static function preparedTail(Reader $reader, array $columns): array
+    {
+        [$tail, $called] = [new Tail(), null];
+        while (($tag = $tail->next($reader, [Tail::DECLARED, Tail::CALLED])) !== null) {
+            if ($tag === Tail::DECLARED) {
+                $columns = self::withDeclared($reader, $columns);
+
+                continue;
+            }
+            [$schema, $name, $parameters] = [$reader->string(), $reader->string(), []];
+            for ($count = $reader->u32(); $count > 0; $count--) {
+                $parameters[] = self::called($reader);
+            }
+            $called = new Called($schema, $name, $parameters);
+        }
+
+        return [$columns, $called];
+    }
+
+    /**
+     * One `?` of a CALL as tag 20 writes it: its mode, its parameter's ordinal position, from 1, and its type.
+     *
+     * @throws TurborelException SQLSTATE 08006 if its mode is of no code, its position 0, or it is malformed
+     */
+    private static function called(Reader $reader): Parameter
+    {
+        $code = $reader->u8();
+        $mode = ParameterMode::tryFrom($code) ?? throw $reader->malformed("{$code} is no parameter mode's code");
+        $ordinal = $reader->u32();
+        if ($ordinal === 0) {
+            throw $reader->malformed("a parameter's ordinal position is from 1");
+        }
+
+        return new Parameter($reader->flag(), TypeCodec::read($reader), $mode, $ordinal);
+    }
+
+    /**
+     * `$columns`, each with the declared type tag 19 gives it.
+     *
+     * @param list<Column> $columns
+     *
+     * @return list<Column>
+     *
+     * @throws TurborelException SQLSTATE 08006 if its types are not one for each column, or are malformed
+     */
+    private static function withDeclared(Reader $reader, array $columns): array
+    {
+        $declared = [];
+        for ($count = $reader->u32(); $count > 0; $count--) {
+            $declared[] = new Declared($reader->string(), $reader->string());
+        }
+        if (\count($declared) !== \count($columns)) {
+            throw $reader->malformed('its declared types are not one for each column');
+        }
+
+        return array_map(static fn(Column $c, Declared $d): Column => $c->withDeclared($d), $columns, $declared);
     }
 
     /**

@@ -46,7 +46,7 @@ final class Replies
         $reply = match ($kind) {
             Kind::CHALLENGE => new Challenge($reader->bytes()),
             Kind::READY => new Ready($reader->string(), $reader->key(), $reader->strings(), $reader->string()),
-            Kind::PREPARED => new Prepared($reader->u32(), Fields::parameters($reader), Fields::declared($reader, Fields::columns($reader))),
+            Kind::PREPARED => self::prepared($reader),
             Kind::DESCRIPTION => new Description(Fields::declared($reader, Fields::columns($reader))),
             Kind::ROWS => new Rows(Fields::rows($reader)),
             Kind::SUSPENDED => new Suspended(),
@@ -61,6 +61,19 @@ final class Replies
         $reader->finish();
 
         return $reply;
+    }
+
+    /**
+     * A Prepared: its statement's number, its input parameters, its columns, then its tail.
+     *
+     * @throws TurborelException SQLSTATE 08006 if it is malformed
+     */
+    private static function prepared(Reader $reader): Prepared
+    {
+        [$statement, $parameters] = [$reader->u32(), Fields::parameters($reader)];
+        [$columns, $called] = Fields::preparedTail($reader, Fields::columns($reader));
+
+        return new Prepared($statement, $parameters, $columns, $called);
     }
 
     /**

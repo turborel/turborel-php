@@ -34,6 +34,7 @@ use Turborel\Type\CharacterType;
 use Turborel\Type\Column;
 use Turborel\Type\ExactType;
 use Turborel\Type\Parameter;
+use Turborel\Type\ParameterMode;
 use Turborel\Value\CharUnits;
 use Turborel\Value\Exact;
 
@@ -180,6 +181,29 @@ final class RepliesTest extends CodecTestCase
     public function aMalformedReplyFailsTheConnection(int $kind, string $body): void
     {
         self::assertConnectionFails(static fn(): mixed => Replies::decode($kind, self::hex($body)));
+    }
+
+    /**
+     * Verifies: [PROTOCOL Parameter modes] [PROTOCOL Prepared 'P']: a
+     * Prepared's tail 20 gives the CALL's procedure and each `?` with its
+     * mode and ordinal position; a mode of another code, or a position of 0,
+     * fails the connection (SQLSTATE 08006).
+     *
+     * @throws TurborelException never from the well-formed tail
+     */
+    #[Test]
+    public function aCallsParameterModesAreRead(): void
+    {
+        $called = static fn(int $mode, int $ordinal): string => self::writer()->u32(3)->u32(1)->flag(false)->raw(self::hex('02 0A 00 00 00 00 00 00 00'))->u32(0)
+            ->u8(20)->string('S')->string('P')->u32(2)->u8(1)->u32(1)->flag(false)->raw(self::hex('02 0A 00 00 00 00 00 00 00'))
+            ->u8($mode)->u32($ordinal)->flag(false)->raw(self::hex('02 0A 00 00 00 00 00 00 00'))->bytesWritten();
+        $prepared = Replies::decode(Kind::PREPARED, $called(2, 2));
+        self::assertInstanceOf(Prepared::class, $prepared);
+        self::assertSame(['S', 'P', [ParameterMode::In, ParameterMode::InOut], [1, 2]], [$prepared->called?->schema, $prepared->called?->name,
+            array_map(static fn(Parameter $p): ParameterMode => $p->mode, $prepared->called->parameters ?? []), array_map(static fn(Parameter $p): ?int => $p->ordinal, $prepared->called->parameters ?? [])]);
+        foreach ([[3, 2], [4, 0]] as [$mode, $ordinal]) {
+            self::assertConnectionFails(static fn(): mixed => Replies::decode(Kind::PREPARED, $called($mode, $ordinal)));
+        }
     }
 
     /**

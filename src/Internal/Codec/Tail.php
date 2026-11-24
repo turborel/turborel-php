@@ -53,6 +53,9 @@ final class Tail
     /** Tag 19, of Prepared and Description: each column's declared type, granted `declared-types`. */
     public const int DECLARED = 19;
 
+    /** Tag 20, of Prepared: a CALL's procedure and its `?` marks' modes, granted `parameter-modes`. */
+    public const int CALLED = 20;
+
     /** [DESIGN] The most attributes a message takes [PROTOCOL The tail]. */
     public const int MAX_ATTRIBUTES = 32;
 

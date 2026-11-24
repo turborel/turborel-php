@@ -17,6 +17,6 @@ final class Defaults
         Capability::PING, Capability::RESET, Capability::CHANGE_USER, Capability::QUERY_ATTRIBUTES,
         Capability::CONNECTION_ATTRIBUTES, Capability::MULTI_STATEMENT, Capability::COMMIT_POSITION, Capability::COPY,
         Capability::ROW_COUNTS, Capability::GENERATED_VALUES, Capability::FETCH_ENDS, Capability::CONDITIONS,
-        Capability::DECLARED_TYPES,
+        Capability::DECLARED_TYPES, Capability::PARAMETER_MODES,
     ];
 }

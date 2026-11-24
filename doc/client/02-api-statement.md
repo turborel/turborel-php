@@ -33,7 +33,10 @@ final class Statement implements \IteratorAggregate
 
 A statement's `?` parameters are bound by position, from 1: `bindValue`
 binds a value, `bindParam` a variable read as the statement executes;
-or `execute` takes a value for each, in order. A value is taken as its
+or `execute` takes a value for each, in order. Of a CALL, an OUT or
+INOUT parameter's `?` is bound by `bindParam` with PARAM_INPUT_OUTPUT:
+an OUT one is sent no value, and once the CALL runs, each OUT and INOUT
+value is written back to its variable. A value is taken as its
 type says: PARAM_INT makes an integer of a string of an integer's
 digits, PARAM_STR a string of a number or truth value, PARAM_BOOL a
 truth value, PARAM_LOB a string of a stream's contents, PARAM_NULL null;
@@ -85,12 +88,19 @@ foreach ($teas as $tea) {
     echo $tea->NAME, ' ', $tea->PRICE, PHP_EOL;
 }
 echo $teas->getColumnMeta(0)['native_type'], PHP_EOL;
+$db->exec('CREATE PROCEDURE DOUBLED(IN A INTEGER, OUT B INTEGER) LANGUAGE SQL CONTAINS SQL BEGIN SET B = A * 2; END');
+$call = $db->prepare('CALL DOUBLED(?, ?)');
+$call->bindValue(1, 21, Pdo::PARAM_INT);
+$call->bindParam(2, $doubled, Pdo::PARAM_INT | Pdo::PARAM_INPUT_OUTPUT);
+$call->execute();
+echo $doubled, PHP_EOL;
 ```
 
 ```text
 Assam 4.50
 Sencha 4.50
 CHARACTER VARYING
+42
 ```
 
 ## STANDARD

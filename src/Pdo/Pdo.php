@@ -26,6 +26,9 @@ final class Pdo
     /** A parameter's type: a truth value. */
     public const int PARAM_BOOL = 5;
 
+    /** A flag of a parameter's type: of a CALL's INOUT or OUT parameter, its value written back to the variable bound. */
+    public const int PARAM_INPUT_OUTPUT = 0x8000_0000;
+
     /** A row as an array by column name. */
     public const int FETCH_ASSOC = 2;
 

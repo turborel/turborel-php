@@ -99,7 +99,9 @@ final class Statement implements \IteratorAggregate
     }
 
     /**
-     * Executes it, with `$params`, a value for each `?` in order, if given, else the values bound.
+     * Executes it, with `$params`, a value for each `?` in order, if given, else the values bound: of a CALL whose `?`
+     * marks' modes the server told, of its IN and INOUT ones alone, the OUT and INOUT values then written back to the
+     * variables bound at their positions.
      *
      * @param list<mixed>|null $params
      *
@@ -107,7 +109,8 @@ final class Statement implements \IteratorAggregate
      */
     public function execute(?array $params = null): bool
     {
-        $values = $params ?? Binding::values($this->bound, $this->references);
+        $marks = $this->prepared?->called?->parameters;
+        $values = $params ?? Binding::values($this->bound, $this->references, $marks);
         $this->outcome = $this->connection->watched(function () use ($values): Outcome {
             $client = $this->connection->client();
             if ($this->prepared === null) {
@@ -116,6 +119,9 @@ final class Statement implements \IteratorAggregate
 
             return $client->execute($this->prepared, $values);
         });
+        if ($marks !== null && $params === null) {
+            Binding::writeBack($this->references, $marks, $this->outcome->rows[0] ?? []);
+        }
         $this->next = 0;
 
         return true;

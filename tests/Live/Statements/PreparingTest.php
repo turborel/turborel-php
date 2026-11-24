@@ -20,6 +20,8 @@ use Turborel\TurborelException;
 use Turborel\Type\CharacterType;
 use Turborel\Type\Column;
 use Turborel\Type\ExactType;
+use Turborel\Type\Parameter;
+use Turborel\Type\ParameterMode;
 use Turborel\Value\Binary;
 use Turborel\Value\Exact;
 
@@ -72,7 +74,9 @@ final class PreparingTest extends LiveTestCase
      * a CALL's parameters are its inputs alone, and its columns one for each
      * `?` of an OUT or INOUT parameter, in the procedure's order, an INOUT
      * one both; executed, it sends one row of those parameters' values
-     * before its Complete, which is the CALL's outcome.
+     * before its Complete, which is the CALL's outcome. Granted
+     * `parameter-modes`, each `?` gives its mode and its parameter's
+     * position, the procedure its schema; another statement's are IN.
      *
      * @throws TurborelException never from the statements
      */
@@ -87,6 +91,11 @@ final class PreparingTest extends LiveTestCase
         self::assertSame(['B', 'C'], array_map(static fn(Column $column): ?string => $column->name, $call->columns));
         $outcome = $connection->execute($call, [3, 10]);
         self::assertSame([['6', '11'], 0], [array_map(static fn(mixed $value): string => $value instanceof Exact ? $value->units : '', $outcome->rows[0] ?? []), $outcome->completed?->sqlcode()]);
+        $modes = array_map(static fn(Parameter $p): array => [$p->mode, $p->ordinal], $call->dynamicParameters());
+        self::assertSame([[ParameterMode::In, 1], [ParameterMode::Out, 2], [ParameterMode::InOut, 3]], $modes);
+        self::assertSame('ANN', $call->called?->schema);
+        $plain = $connection->prepare('VALUES CAST(? AS INTEGER)');
+        self::assertSame([null, [[ParameterMode::In, null]]], [$plain->called, array_map(static fn(Parameter $p): array => [$p->mode, $p->ordinal], $plain->dynamicParameters())]);
         $connection->terminate();
     }
 

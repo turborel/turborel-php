@@ -44,6 +44,16 @@ then `rows`, a batch at a time. A `Turborel\Type\Column` holds `name`,
 its type as SQL `written`; `typeWritten()` gives the type as it was
 declared, else as its tag's type is written, as NUMERIC(10,0).
 
+A `Statement`'s `parameters` are those an execution gives values for:
+of a CALL, not its OUT ones, whose values come back as the row its
+`columns` describe. Granted `parameter-modes`, which a connection asks
+for, a CALL of an SQL-invoked procedure has `called`, a
+`Turborel\Type\Called` of the procedure's `schema` and `name` and each
+`?` in written order; `dynamicParameters()` gives every `?` as a
+`Turborel\Type\Parameter` of its `mode`, a `ParameterMode` (`In`,
+`InOut` or `Out`), and its parameter's `ordinal` position, from 1. Of
+another statement, or a procedure written in Rust, each is `In`.
+
 ## DESCRIPTION
 
 `query` runs a direct SQL statement and gives a query's columns and
@@ -114,7 +124,7 @@ INTEGER, tag type Turborel\Type\ExactType
 
 [PROTOCOL Query 'Q'], [PROTOCOL Prepare 'P'], [PROTOCOL Execute 'E'],
 [PROTOCOL Fetch 'F'], [PROTOCOL Close 'C'], [PROTOCOL Deallocate 'D'],
-[PROTOCOL Describe 'Y'], [PROTOCOL Complete 'K'], [PROTOCOL Declared types],
+[PROTOCOL Describe 'Y'], [PROTOCOL Complete 'K'], [PROTOCOL Declared types], [PROTOCOL Parameter modes],
 [PROTOCOL Conversations], [CLIENT Running statements],
 [CLIENT Prepared statements], [CLIENT What the server tells],
 [CLIENT Controlling the session].

@@ -40,7 +40,8 @@ final class Said
         return match (true) {
             $reply instanceof Challenge => "Challenge {$reply->challenge}",
             $reply instanceof Ready => "Ready {$reply->authorization}, key " . strtoupper(bin2hex($reply->key)) . ', ' . implode(' ', $reply->capabilities) . ", {$reply->server}",
-            $reply instanceof Prepared => "Prepared {$reply->statement}, parameters " . implode(', ', array_map(self::parameter(...), $reply->parameters)) . '; ' . self::columns($reply->columns),
+            $reply instanceof Prepared => "Prepared {$reply->statement}, parameters " . implode(', ', array_map(self::parameter(...), $reply->parameters)) . '; ' . self::columns($reply->columns)
+                . ($reply->called === null ? '' : "; called {$reply->called->schema}.{$reply->called->name}: " . implode(', ', array_map(self::mode(...), $reply->called->parameters))),
             $reply instanceof Description => 'Description ' . self::columns($reply->columns),
             $reply instanceof Rows => trim('Rows ' . implode(' ', array_map(static fn(array $row): string => '(' . implode(', ', array_map(Text::literal(...), $row)) . ')', $reply->rows))),
             $reply instanceof Complete => 'Complete ' . self::completion($reply->completion),
@@ -51,6 +52,12 @@ final class Said
             $reply instanceof Status => "Status {$reply->name}={$reply->value}",
             default => (new \ReflectionClass($reply))->getShortName(),
         };
+    }
+
+    /** A `?` of a CALL: its mode, its parameter's ordinal position, and its type as written. */
+    private static function mode(Parameter $parameter): string
+    {
+        return strtoupper($parameter->mode->name) . " {$parameter->ordinal} " . self::parameter($parameter);
     }
 
     /** A parameter: its type as written, `varying` where it is flagged so. */

@@ -52,7 +52,7 @@ final readonly class Results
     {
         $reply = $this->wire->receive();
         if ($reply instanceof Prepared) {
-            return new Statement($reply->statement, $reply->parameters, $reply->columns);
+            return new Statement($reply->statement, $reply->parameters, $reply->columns, $reply->called);
         }
 
         throw $this->unexpected($reply, 'the server sent no Prepared');
