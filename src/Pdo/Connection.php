@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Pdo;
 
+use Turborel\Debug\Debugger;
 use Turborel\Internal\Misuse;
 use Turborel\Internal\Pdo\Fetching;
 use Turborel\Session\Connection as Client;
@@ -85,6 +86,12 @@ final class Connection
     public function client(): Client
     {
         return $this->client;
+    }
+
+    /** The routine debugger of its low-level connection, a driver's extension of the standard interface, with `debugger` granted *(extension)* [CLIENT Debugging routines]. */
+    public function debugger(): Debugger
+    {
+        return $this->client()->debugger();
     }
 
     /**

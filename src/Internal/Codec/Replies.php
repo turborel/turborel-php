@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Codec;
 
+use Turborel\Debug\Breakpoint;
 use Turborel\Internal\Codec\Reply\Challenge;
 use Turborel\Internal\Codec\Reply\Complete;
+use Turborel\Internal\Codec\Reply\Debugged;
 use Turborel\Internal\Codec\Reply\Description;
 use Turborel\Internal\Codec\Reply\Error;
+use Turborel\Internal\Codec\Reply\EventSent;
 use Turborel\Internal\Codec\Reply\LobCreated;
 use Turborel\Internal\Codec\Reply\LobData;
 use Turborel\Internal\Codec\Reply\Notice;
@@ -56,11 +59,49 @@ final class Replies
             Kind::NOTICE => new Notice($reader->string(), $reader->string(), Diagnostics::read($reader)),
             Kind::STATUS => new Status($reader->string(), $reader->string()),
             Kind::PONG => new Pong(),
+            Kind::DEBUGGED => self::debugged($reader),
+            Kind::EVENT => new EventSent(DebugCodec::event($reader)),
             default => throw $reader->malformed("no reply is of kind {$kind}"),
         };
         $reader->finish();
 
         return $reply;
+    }
+
+    /**
+     * A Debugged: what it gives, then a connection's ID, a breakpoint, the breakpoints, or a paused flag and the pause.
+     *
+     * @throws TurborelException SQLSTATE 08006 if it is of no kind, or malformed
+     */
+    private static function debugged(Reader $reader): Debugged
+    {
+        $what = $reader->u8();
+        $value = match ($what) {
+            Debugged::CONNECTION => $reader->u64(),
+            Debugged::BREAKPOINT => DebugCodec::breakpoint($reader),
+            Debugged::BREAKPOINTS => self::breakpoints($reader),
+            Debugged::STACK => $reader->flag() ? DebugCodec::pause($reader) : null,
+            default => throw $reader->malformed('no Debug reply is of this kind'),
+        };
+
+        return new Debugged($what, $value);
+    }
+
+    /**
+     * A count of breakpoints, then each.
+     *
+     * @return list<Breakpoint>
+     *
+     * @throws TurborelException SQLSTATE 08006 if one is malformed
+     */
+    private static function breakpoints(Reader $reader): array
+    {
+        $all = [];
+        for ($count = $reader->u32(); $count > 0; $count--) {
+            $all[] = DebugCodec::breakpoint($reader);
+        }
+
+        return $all;
     }
 
     /**
@@ -78,12 +119,12 @@ final class Replies
 
     /**
      * Whether a reply of `$kind` and `$body`, decoded or not, is the last its request is answered with, by the order of a
-     * statement's replies, as turborel's `ends_request` says: a Description, Rows, a Notice or a Status has more after it; a
+     * statement's replies, as turborel's `ends_request` says: a Description, Rows, a Notice, a Status or an Event has more after it; a
      * Complete has if its tail says more, read as `Completion::head` reads it; any other reply ends its request's.
      */
     public static function endsRequest(int $kind, string $body): bool
     {
-        if (\in_array($kind, [Kind::DESCRIPTION, Kind::ROWS, Kind::NOTICE, Kind::STATUS], true)) {
+        if (\in_array($kind, [Kind::DESCRIPTION, Kind::ROWS, Kind::NOTICE, Kind::STATUS, Kind::EVENT], true)) {
             return false;
         }
 

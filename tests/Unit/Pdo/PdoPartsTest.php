@@ -23,7 +23,10 @@ use Turborel\Type\Declared;
 use Turborel\Type\ExactType;
 use Turborel\Type\JsonType;
 use Turborel\Type\LobType;
+use Turborel\Type\Parameter;
+use Turborel\Type\ParameterMode;
 use Turborel\Value\CharUnits;
+use Turborel\Value\Exact;
 use Turborel\Value\LobKind;
 use Turborel\Value\Moment;
 
@@ -34,6 +37,7 @@ use Turborel\Value\Moment;
 #[CoversNamespace('Turborel\Internal')]
 #[CoversNamespace('Turborel\Type')]
 #[CoversClass(TurborelException::class)]
+#[CoversClass(Exact::class)]
 final class PdoPartsTest extends CodecTestCase
 {
     /**
@@ -97,5 +101,28 @@ final class PdoPartsTest extends CodecTestCase
         self::assertFailure('TB910', -910, static fn(): mixed => Fetching::row([1], $columns, Pdo::FETCH_COLUMN, 5, []));
         self::assertFailure('TB910', -910, static fn(): mixed => Fetching::row([1], $columns, Pdo::FETCH_CLASS, 'No\\Such\\Class', []));
         self::assertFailure('TB910', -910, static fn(): int => Fetching::mode(1));
+    }
+
+    /**
+     * Verifies: [DESIGN] D2 [PROTOCOL Parameter modes]: of a CALL whose `?`
+     * marks' modes are told, a value is sent for each IN and INOUT one
+     * alone; its row's OUT and INOUT values are written back to the
+     * variables bound at their positions, an integer to PARAM_INT, a string
+     * to PARAM_STR, else as read.
+     *
+     * @throws TurborelException never from positions bound
+     */
+    #[Test]
+    public function aCallsValuesAreSentAndWrittenBackByMode(): void
+    {
+        $type = new ExactType(10, 0);
+        $marks = [new Parameter(false, $type, ParameterMode::In, 1), new Parameter(false, $type, ParameterMode::Out, 2),
+            new Parameter(false, $type, ParameterMode::InOut, 3), new Parameter(false, $type, ParameterMode::Out, 4)];
+        [$out, $inout, $last] = [null, 5, null];
+        $references = [2 => [&$out, Pdo::PARAM_STR | Pdo::PARAM_INPUT_OUTPUT], 3 => [&$inout, Pdo::PARAM_INT | Pdo::PARAM_INPUT_OUTPUT], 4 => [&$last, Pdo::PARAM_LOB]];
+        self::assertSame([1, 5], Binding::values([1 => [1, Pdo::PARAM_INT]], $references, $marks));
+        Binding::writeBack($references, $marks, [new Exact('125', 2), new Exact('6', 0), new Exact('7', 0)]);
+        self::assertSame(['1.25', 6], [$out, $inout]);
+        self::assertEquals(new Exact('7', 0), $last);
     }
 }

@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace Turborel\Tests\Unit\Internal\Codec\Frames;
 
+use Turborel\Debug\Breakpoint;
+use Turborel\Debug\Cursor;
+use Turborel\Debug\Frame;
+use Turborel\Debug\Named;
+use Turborel\Debug\Paused;
 use Turborel\Internal\Codec\Completion;
 use Turborel\Internal\Codec\Failure;
 use Turborel\Internal\Codec\Reply\Challenge;
 use Turborel\Internal\Codec\Reply\Complete;
+use Turborel\Internal\Codec\Reply\Debugged;
 use Turborel\Internal\Codec\Reply\Description;
 use Turborel\Internal\Codec\Reply\Error;
+use Turborel\Internal\Codec\Reply\EventSent;
 use Turborel\Internal\Codec\Reply\LobCreated;
 use Turborel\Internal\Codec\Reply\LobData;
 use Turborel\Internal\Codec\Reply\Notice;
@@ -50,8 +57,57 @@ final class Said
             $reply instanceof LobCreated => "Lob locator {$reply->locator}",
             $reply instanceof Notice => "Notice {$reply->sqlstate} {$reply->message}" . self::fields($reply->diagnostics->fields ?? []),
             $reply instanceof Status => "Status {$reply->name}={$reply->value}",
+            $reply instanceof Debugged => 'Debugged ' . self::debugged($reply->value),
+            $reply instanceof EventSent => 'Event ' . strtolower($reply->event->kind->name) . ($reply->event->paused === null ? '' : ' ' . self::paused($reply->event->paused)),
             default => (new \ReflectionClass($reply))->getShortName(),
         };
+    }
+
+    /**
+     * What a Debugged gives: a connection's ID, a breakpoint, the breakpoints, or a pause, none of a target running.
+     *
+     * @param int|string|Breakpoint|list<Breakpoint>|Paused|null $value
+     *
+     * @throws TurborelException never, every value having a literal
+     */
+    private static function debugged(int|string|Breakpoint|array|Paused|null $value): string
+    {
+        $breakpoint = static fn(Breakpoint $b): string => "#{$b->number} {$b->schema}.{$b->name} line {$b->line}" . ($b->condition === null ? '' : " if {$b->condition}");
+
+        return match (true) {
+            \is_int($value), \is_string($value) => "connection {$value}",
+            $value instanceof Breakpoint => 'breakpoint ' . $breakpoint($value),
+            \is_array($value) => 'breakpoints ' . implode('; ', array_map($breakpoint, $value)),
+            $value instanceof Paused => 'stack ' . self::paused($value),
+            default => 'stack running',
+        };
+    }
+
+    /**
+     * A pause: its reason, then each frame, its origin, place, parameters, variables and cursors.
+     *
+     * @throws TurborelException never, every value having a literal
+     */
+    private static function paused(Paused $paused): string
+    {
+        $frame = static fn(Frame $f): string => ($f->origin === null ? 'direct' : strtolower($f->origin->kind->name) . " {$f->origin->schema}.{$f->origin->specificName} ({$f->origin->shownSchema}.{$f->origin->name})")
+            . ($f->visible ? '' : ' hidden') . ' at ' . ($f->place->at ?? '-') . ' line ' . ($f->place->line ?? '-') . ':' . ($f->place->column ?? '-')
+            . ' [' . self::named($f->scope->parameters) . '] [' . self::named($f->scope->variables) . '] ['
+            . implode(', ', array_map(static fn(Cursor $c): string => "{$c->name} " . ($c->open ? 'open' : 'closed') . " {$c->query}", $f->scope->cursors)) . ']';
+
+        return ($paused->breakpoint === null ? 'step' : "breakpoint {$paused->breakpoint}") . ': ' . implode(' / ', array_map($frame, $paused->frames));
+    }
+
+    /**
+     * Parameters or variables, each its name, type and value.
+     *
+     * @param list<Named> $all
+     *
+     * @throws TurborelException never, every value having a literal
+     */
+    private static function named(array $all): string
+    {
+        return implode(', ', array_map(static fn(Named $n): string => "{$n->name} {$n->type} " . Text::literal($n->value), $all));
     }
 
     /** A `?` of a CALL: its mode, its parameter's ordinal position, and its type as written. */

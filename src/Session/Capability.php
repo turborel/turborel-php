@@ -70,11 +70,14 @@ final class Capability
     /** A Prepared of a CALL carries the mode and position of each of its `?` marks, tail 20. */
     public const string PARAMETER_MODES = 'parameter-modes';
 
+    /** The request Debug, its answer Debugged, and the Event sent unasked *(extension)*. */
+    public const string DEBUGGER = 'debugger';
+
     /** Every capability, in the spec's order. */
     public const array ALL = [
         self::NOTICES, self::STATUS, self::DIAGNOSTICS, self::DESCRIBE, self::CURSORS, self::PING, self::RESET,
         self::CHANGE_USER, self::QUERY_ATTRIBUTES, self::CONNECTION_ATTRIBUTES, self::MULTI_STATEMENT, self::COMPRESSION,
         self::COMMIT_POSITION, self::COPY, self::ROW_COUNTS, self::GENERATED_VALUES, self::FETCH_ENDS, self::CONDITIONS,
-        self::DECLARED_TYPES, self::PARAMETER_MODES,
+        self::DECLARED_TYPES, self::PARAMETER_MODES, self::DEBUGGER,
     ];
 }

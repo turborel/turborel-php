@@ -49,7 +49,7 @@ Project automation is the language's own tooling, never shell scripts
 | `src/TurborelException.php` | the driver's error (D2, R-ERR) |
 | `src/Internal/Codec/` | the `codec` layer, internal (D9) |
 | `src/Internal/Transport/`, `src/Internal/Auth/`, `src/Internal/Tls/` | the `transport`, `auth` and `tls` layers, internal, as they are built |
-| `src/Session/`, `src/Statements/`, `src/Lobs/`, `src/Copy/`, `src/Settings/`, `src/Pipeline/`, `src/Pool/` | the low-level client's public layers, as they are built, their internals under `src/Internal/` |
+| `src/Session/`, `src/Statements/`, `src/Lobs/`, `src/Copy/`, `src/Settings/`, `src/Pipeline/`, `src/Pool/`, `src/Debug/` | the low-level client's public layers, as they are built, their internals under `src/Internal/` |
 | `src/Pdo/` | the `api` layer, the PDO-style API (D2) |
 | `tests/Unit/` | tests with no network, mirroring `src/` |
 | `tests/Live/` | live tests against a server on loopback, run where TURBOREL_TEST_SERVER names one |

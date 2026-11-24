@@ -6,6 +6,7 @@ namespace Turborel\Session;
 
 use Turborel\Copy\Copying;
 use Turborel\Copy\ExportFormat;
+use Turborel\Debug\Debugger;
 use Turborel\Internal\Codec\Reply\Ready;
 use Turborel\Internal\ConnectionFailure;
 use Turborel\Internal\Copy\Exporter;
@@ -257,7 +258,7 @@ final class Connection
      */
     public function prepare(string $sql): Statement
     {
-        return $this->preparing()->prepare($sql);
+        return (new Preparing($this->wire, $this->autocommit))->prepare($sql);
     }
 
     /**
@@ -269,7 +270,7 @@ final class Connection
      */
     public function execute(Statement $statement, array $values = []): Outcome
     {
-        return $this->preparing()->execute($statement, $values);
+        return (new Preparing($this->wire, $this->autocommit))->execute($statement, $values);
     }
 
     /**
@@ -282,7 +283,7 @@ final class Connection
      */
     public function openCursor(Statement $statement, array $values = [], int $rows = 0, int $cursor = 0): Batch
     {
-        return $this->preparing()->open($statement, $values, $rows, $cursor);
+        return (new Preparing($this->wire, $this->autocommit))->open($statement, $values, $rows, $cursor);
     }
 
     /**
@@ -292,7 +293,7 @@ final class Connection
      */
     public function fetch(Statement $statement, int $rows = 0, int $cursor = 0): Batch
     {
-        return $this->preparing()->fetch($statement, $rows, $cursor);
+        return (new Preparing($this->wire, $this->autocommit))->fetch($statement, $rows, $cursor);
     }
 
     /**
@@ -302,7 +303,7 @@ final class Connection
      */
     public function close(Statement $statement, int $cursor = 0): void
     {
-        $this->preparing()->close($statement, $cursor);
+        (new Preparing($this->wire, $this->autocommit))->close($statement, $cursor);
     }
 
     /**
@@ -312,7 +313,7 @@ final class Connection
      */
     public function describe(Statement $statement): Statement
     {
-        return $this->preparing()->describe($statement);
+        return (new Preparing($this->wire, $this->autocommit))->describe($statement);
     }
 
     /**
@@ -324,7 +325,7 @@ final class Connection
      */
     public function describeCursor(Statement $statement, int $cursor = 0): array
     {
-        return $this->preparing()->describeCursor($statement, $cursor);
+        return (new Preparing($this->wire, $this->autocommit))->describeCursor($statement, $cursor);
     }
 
     /**
@@ -334,7 +335,7 @@ final class Connection
      */
     public function deallocate(Statement $statement): void
     {
-        $this->preparing()->deallocate($statement);
+        (new Preparing($this->wire, $this->autocommit))->deallocate($statement);
     }
 
     /**
@@ -559,10 +560,10 @@ final class Connection
         Ending::terminate($this->wire, $this->timeouts === null ? null : ($this->timeouts->read ?? Timeouts::TERMINATE_WITHIN));
     }
 
-    /** The prepared statements of the session. */
-    private function preparing(): Preparing
+    /** Its routine debugger, with `debugger` granted *(extension)* [CLIENT Debugging routines]. */
+    public function debugger(): Debugger
     {
-        return new Preparing($this->wire, $this->autocommit);
+        return new Debugger($this->wire);
     }
 
     /**

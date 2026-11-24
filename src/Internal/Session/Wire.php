@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Session;
 
+use Turborel\Debug\Event;
 use Turborel\Internal\Codec\Completion;
 use Turborel\Internal\Codec\FrameHeader;
 use Turborel\Internal\Codec\Frames;
@@ -11,6 +12,7 @@ use Turborel\Internal\Codec\Replies;
 use Turborel\Internal\Codec\Reply\Complete;
 use Turborel\Internal\Codec\Reply\Description;
 use Turborel\Internal\Codec\Reply\Error;
+use Turborel\Internal\Codec\Reply\EventSent;
 use Turborel\Internal\Codec\Reply\LobCreated;
 use Turborel\Internal\Codec\Reply\LobData;
 use Turborel\Internal\Codec\Reply\Notice;
@@ -196,9 +198,37 @@ final class Wire
             $this->told->notice(new PublicNotice($reply->sqlstate, $reply->message, $reply->diagnostics === null ? [] : $reply->diagnostics->fields));
         } elseif ($reply instanceof Status) {
             $this->told->settings[$reply->name] = $reply->value;
+        } elseif ($reply instanceof EventSent) {
+            $this->told->events[] = $reply->event;
         } else {
             return $this->noted($reply);
         }
+
+        return null;
+    }
+
+    /**
+     * The next frame, of an event sent unasked between requests, as turborel-client's `debug_wait` reads it, if one begins
+     * to arrive within `$within` seconds, without limit if none: the event; none of a Notice or a Status, taken, or of nothing.
+     *
+     * @throws TurborelException the server's Error; SQLSTATE 08006 of a reply to no request, or if the connection is lost
+     */
+    public function unasked(?float $within): ?Event
+    {
+        if ($within !== null && !$this->stream->waiting($within)) {
+            return null;
+        }
+        $reply = $this->next(true);
+        if ($reply instanceof EventSent) {
+            return $reply->event;
+        }
+        if ($reply instanceof Error) {
+            throw $this->failed(TurborelException::fromServer($reply->failure));
+        }
+        if (!$reply instanceof Notice && !$reply instanceof Status) {
+            throw $this->lose('the server answered no request');
+        }
+        $this->took($reply);
 
         return null;
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Internal\Session;
 
+use Turborel\Debug\Event;
 use Turborel\Internal\Codec\Completion;
 use Turborel\Session\Capability;
 use Turborel\Session\Notice;
@@ -42,6 +43,9 @@ final class Told
 
     /** @var list<array{string, string}> the attributes each Query and Execute carries, with `query-attributes` */
     public array $attributes = [];
+
+    /** @var list<Event> a debugger's events read with the replies of a request, kept until the debugger waits for them, oldest first */
+    public array $events = [];
 
     /** Whether the server granted `$capability`. */
     public function has(string $capability): bool

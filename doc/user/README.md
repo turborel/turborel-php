@@ -16,3 +16,4 @@ For anyone who writes a PHP program against Turborel: installing the driver, con
 - [Pipelines and Pools](08-pipelines-and-pools.md)
 - [Settings](09-settings.md)
 - [Errors and Diagnostics](10-errors.md)
+- [Debugging Routines](11-debugging.md)

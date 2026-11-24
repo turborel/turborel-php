@@ -28,7 +28,7 @@ SCRAM-SHA-256 and SCRAM-SHA-256-PLUS, prepared statements and cursors,
 procedures' OUT and INOUT parameters, columns' declared types, large
 objects, bulk copy, import and export, settings from a URI, the
 environment and service and password files, several servers, pipelines
-and pools.
+and pools, and the routine debugger *(extension)*.
 
 The driver was built in milestones, M0 to M8, and every one is done.
 [CONFORMANCE.md](CONFORMANCE.md) shows what is done, row by row, and

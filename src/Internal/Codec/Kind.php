@@ -67,6 +67,9 @@ final class Kind
     /** CopyEnd 'N' [PROTOCOL CopyEnd 'N']. */
     public const int COPY_END = 0x4E;
 
+    /** Debug 'V', with `debugger` [PROTOCOL Debug 'V'] *(extension)*. */
+    public const int DEBUG = 0x56;
+
     /** Challenge 'C' [PROTOCOL Challenge 'C']. */
     public const int CHALLENGE = 0x43;
 
@@ -99,6 +102,12 @@ final class Kind
 
     /** Pong 'G' [PROTOCOL Pong 'G']. */
     public const int PONG = 0x47;
+
+    /** Debugged 'V', with `debugger` [PROTOCOL Debugged 'V'] *(extension)*. */
+    public const int DEBUGGED = 0x56;
+
+    /** Event 'W', with `debugger`, sent unasked [PROTOCOL Event 'W'] *(extension)*. */
+    public const int EVENT = 0x57;
 
     /** A compressed frame 'z', the same both ways [PROTOCOL Compressed frames]. */
     public const int COMPRESSED = 0x7A;

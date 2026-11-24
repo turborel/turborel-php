@@ -7,6 +7,8 @@ namespace Turborel\Tests\Unit\Internal\Codec;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\Test;
+use Turborel\Debug\Action;
+use Turborel\Debug\RoutineKind;
 use Turborel\Internal\Codec\FrameHeader;
 use Turborel\Internal\Codec\Frames;
 use Turborel\Internal\Codec\Kind;
@@ -19,6 +21,7 @@ use Turborel\Internal\Codec\Request\CopyData;
 use Turborel\Internal\Codec\Request\CopyEnd;
 use Turborel\Internal\Codec\Request\CopyIn;
 use Turborel\Internal\Codec\Request\Deallocate;
+use Turborel\Internal\Codec\Request\Debug;
 use Turborel\Internal\Codec\Request\Describe;
 use Turborel\Internal\Codec\Request\Execute;
 use Turborel\Internal\Codec\Request\Extras;
@@ -39,17 +42,18 @@ use Turborel\Value\LobKind;
 
 /**
  * Turborel's sample frames, `doc/client/05-protocol-frames.tsv`, copied
- * into the fixtures at Turborel's commit 1afa44c2 (RULES.md D12): every
+ * into the fixtures at Turborel's commit 5863fe65 (RULES.md D12): every
  * server frame decoded as its meaning says, every client frame encoded
  * byte for byte, and the compressed ones inflated.
  */
 #[CoversNamespace('Turborel\\Internal')]
 #[CoversNamespace('Turborel\\Type')]
 #[CoversNamespace('Turborel\\Value')]
+#[CoversNamespace('Turborel\\Debug')]
 #[CoversClass(TurborelException::class)]
 final class SampleFramesTest extends CodecTestCase
 {
-    /** The copy of the file, at Turborel's commit 1afa44c2. */
+    /** The copy of the file, at Turborel's commit 5863fe65. */
     private const string FILE = __DIR__ . '/../../../Fixtures/05-protocol-frames.tsv';
 
     /**
@@ -75,7 +79,7 @@ final class SampleFramesTest extends CodecTestCase
             $names[] = $name;
         }
         self::assertSame(array_unique($names), $names, 'each name once');
-        self::assertCount(148, $names);
+        self::assertCount(166, $names);
     }
 
     /**
@@ -88,7 +92,7 @@ final class SampleFramesTest extends CodecTestCase
     #[Test]
     public function everyServerFrameDecodesAsItsMeaningSays(): void
     {
-        $expected = [...self::replies(), ...self::types(), ...self::values()];
+        $expected = [...self::replies(), ...self::types(), ...self::values(), ...self::debugged()];
         $decoded = [];
         foreach (self::samples() as [$direction, $name, , $hex]) {
             if ($direction === 'server') {
@@ -115,7 +119,7 @@ final class SampleFramesTest extends CodecTestCase
     #[Test]
     public function everyClientFrameIsEncodedByteForByte(): void
     {
-        $requests = self::requests();
+        $requests = [...self::requests(), ...self::debugRequests()];
         foreach (self::samples() as [$direction, $name, , $hex]) {
             if ($direction !== 'client') {
                 continue;
@@ -183,6 +187,28 @@ final class SampleFramesTest extends CodecTestCase
             'copy-data' => new CopyData([['1', null], ['2', 'b']]),
             'copy-end' => new CopyEnd(),
             'copy-end-abandon' => new CopyEnd(true),
+        ];
+    }
+
+    /**
+     * The debugger's requests of the client samples, by name.
+     *
+     * @return array<string, Request>
+     *
+     * @throws TurborelException never, the requests being well formed
+     */
+    private static function debugRequests(): array
+    {
+        return [
+            'debug-identify' => Debug::of(Debug::IDENTIFY),
+            'debug-attach' => Debug::attach(2),
+            'debug-detach' => Debug::of(Debug::DETACH),
+            'debug-break' => Debug::break(RoutineKind::Procedure, 'ANN', 'RAISE_PAY', 4, 'PCT > 5'),
+            'debug-clear' => Debug::clear(1),
+            'debug-breakpoints' => Debug::of(Debug::BREAKPOINTS),
+            'debug-resume' => Debug::resume(Action::Over),
+            'debug-interrupt' => Debug::of(Debug::INTERRUPT),
+            'debug-stack' => Debug::of(Debug::STACK),
         ];
     }
 
@@ -342,5 +368,23 @@ final class SampleFramesTest extends CodecTestCase
         yield 'value-json-scalars' => ['Rows (JSON(\'[null,true,false,-2,1.50,"",{}]\'))'];
         yield 'value-xml' => ['Rows (XMLPARSE(CONTENT \'<a>&lt;</a>\' PRESERVE WHITESPACE))'];
         yield 'value-uuid' => ['Rows (UUID \'00112233-4455-6677-8899-aabbccddeeff\')'];
+    }
+
+    /**
+     * The meanings of the debugger's Debugged and Event samples.
+     *
+     * @return iterable<string, array{string}>
+     */
+    private static function debugged(): iterable
+    {
+        yield 'debugged-connection' => ['Debugged connection 2'];
+        yield 'debugged-breakpoint' => ['Debugged breakpoint #1 ANN.RAISE_PAY line 4'];
+        yield 'debugged-breakpoints' => ['Debugged breakpoints #1 ANN.RAISE_PAY line 4'];
+        yield 'debugged-running' => ['Debugged stack running'];
+        yield 'debugged-stack' => ['Debugged stack breakpoint 1: procedure ANN.RAISE_PAY (ANN.RAISE_PAY) at 1 line 4:3 [PCT INTEGER 10] [N INTEGER NULL] [C closed SELECT ID FROM STAFF]'];
+        yield 'event-paused' => ['Event paused breakpoint 1: procedure ANN.RAISE_PAY (ANN.RAISE_PAY) at 1 line 4:3 [PCT INTEGER 10] [N INTEGER NULL] [C closed SELECT ID FROM STAFF]'];
+        yield 'event-timed-out' => ['Event timedout'];
+        yield 'event-cancelled' => ['Event cancelled'];
+        yield 'event-ended' => ['Event ended'];
     }
 }

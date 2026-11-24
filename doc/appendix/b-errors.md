@@ -49,7 +49,7 @@ program meets most:
 | 28 | Credentials refused: SQLCODE -919 as a connection is made, or as a change of user is refused | yes, of SQLCODE -919 |
 | 40 | A transaction rollback, as 40002 of a commit that fails | no |
 | 42 | A syntax error or access rule violation, run or prepared, as 42000 of a table not defined; its SQLCODE tells which rule | no |
-| TB | turborel's own: TB920, SQLCODE -920, a statement cancelled; TBR01, SQLCODE -920, a replica that had not applied REPLICATION.READ_AFTER's position in time | no |
+| TB | turborel's own: TB920, SQLCODE -920, a statement cancelled; TBR01, SQLCODE -920, a replica that had not applied REPLICATION.READ_AFTER's position in time; TBD01, SQLCODE -910, a debugger's request its target's state does not allow *(extension)* | no |
 
 A notice of the server's own comes as a `Turborel\Session\Notice`, never
 as a failure: 01T01, of severity NOTICE, tells that a reset or a change
