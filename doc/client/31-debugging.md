@@ -67,7 +67,8 @@ they were set.
 stack, the outermost frame first; a timeout, once a pause lasted past
 DEBUGGER.PAUSE_TIMEOUT_MS; a cancel of its statement; or its end, which
 detaches the debugger. It waits at most `$within` seconds, without limit
-if none, and gives none if no event came. An event that comes among a
+if none, and gives none if no event came; a wait a signal interrupts
+goes on for the time left. An event that comes among a
 request's replies is kept for the next `wait`. `stack` gives the pause
 again, none of a target running. `resume` lets a paused target go on: a
 step `Into`, `Over` or `Out`, or `Continue` to a breakpoint;

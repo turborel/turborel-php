@@ -24,6 +24,9 @@ final class Stream
     /** The bytes read at a time, so a body is held as it arrives, never as its length says. */
     private const int CHUNK = 65_536;
 
+    /** What PHP says of a select a signal interrupted, EINTR. */
+    private const string INTERRUPTED = 'Interrupted system call';
+
     /** Why a limit of zero is refused, as Rust's standard library says it. */
     public const string ZERO = 'cannot set a 0 duration timeout';
 
@@ -126,18 +129,24 @@ final class Stream
         return $bytes;
     }
 
-    /** Whether bytes are waiting to be read, or arrive within `$within` seconds; a stream not open has none. */
+    /**
+     * Whether bytes are waiting to be read, or arrive within `$within` seconds; a stream not open has none. A wait a signal
+     * interrupts is made again for the time left, as turborel-client's are.
+     */
     public function waiting(float $within): bool
     {
         if (!\is_resource($this->resource)) {
             return false;
         }
-        $read = [$this->resource];
-        $none = null;
-        $seconds = (int) floor($within);
-        [$ready] = Quietly::call(static fn(): int|false => stream_select($read, $none, $none, $seconds, (int) (($within - $seconds) * self::MICROS)));
-
-        return \is_int($ready) && $ready > 0;
+        $deadline = hrtime(true) + (int) ($within * 1e9);
+        while (true) {
+            [$read, $none, $left] = [[$this->resource], null, max(0, $deadline - hrtime(true)) / 1e9];
+            $seconds = (int) floor($left);
+            [$ready, $warning] = Quietly::call(static fn(): int|false => stream_select($read, $none, $none, $seconds, (int) (($left - $seconds) * self::MICROS)));
+            if (\is_int($ready) || $warning === null || !str_contains($warning, self::INTERRUPTED)) {
+                return \is_int($ready) && $ready > 0;
+            }
+        }
     }
 
     /** The TLS protocol the stream speaks, as `TLSv1.3`; none of a stream TLS does not secure. */
