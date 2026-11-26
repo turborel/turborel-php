@@ -9,7 +9,7 @@ namespace Turborel\Tools;
  * manual prints them, its pages' titles among them: `[PROTOCOL Frames]`
  * cites doc/client/05-protocol.md, and `[CLIENT Pipelines]`
  * doc/client/02-library.md or 02-library-connections.md, copied at the
- * Turborel commit CONFORMANCE.md names, 5863fe65. A heading the manual
+ * Turborel commit CONFORMANCE.md names, 45cb0d7f. A heading the manual
  * changes is changed here in the same commit.
  */
 final class Headings
@@ -20,7 +20,7 @@ final class Headings
         'JSON values', 'Composite fields', 'The tail', 'Opening a connection', 'Mechanisms', 'Capabilities',
         'Requests', "Hello 'H'", "Answer 'A'", "Query 'Q'", "Prepare 'P'", "Execute 'E'",
         "Fetch 'F'", "Close 'C'", "Deallocate 'D'", "Lob 'L'", "Cancel 'Z'", "Terminate 'X'",
-        "Describe 'Y'", "Ping 'G'", "Reset 'W'", "ChangeUser 'U'", "CopyIn 'I'", "CopyData 'J'",
+        "Describe 'Y'", "Ping 'G'", "Reset 'W'", "ChangeUser 'U'", "CopyIn 'I'", "CopyData 'J'", "CopyColumns 'O'",
         "CopyEnd 'N'", "Debug 'V'", 'Replies', "Challenge 'C'", "Ready 'R'", "Prepared 'P'", 'Parameter modes',
         "Description 'D'", 'Declared types', "Rows 'B'", "Suspended 'S'", "Complete 'K'", "Error 'E'",
         "Lob 'L'", "Notice 'N'", "Status 'T'", "Pong 'G'", "Debugged 'V'", "Event 'W'", 'Conversations', 'Errors and notices',

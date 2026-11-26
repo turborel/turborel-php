@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Turborel\Copy;
 
+use Turborel\Internal\Codec\Request\CopyColumns;
 use Turborel\Internal\Codec\Request\CopyData;
 use Turborel\Internal\Codec\Request\CopyEnd;
 use Turborel\Internal\Codec\Request\CopyIn;
@@ -19,7 +20,10 @@ use Turborel\TurborelException;
 /**
  * A copy of rows into a table under way, as turborel-client's `Copying`
  * [CLIENT Copying and exporting]: rows sent many to a CopyData, each with
- * no reply; `finish` ends it, giving the rows inserted, or the copy's
+ * no reply; granted `columns`, rows whose every value is a string or null
+ * sent by column, as text, many to a CopyColumns, as CopyData would carry
+ * them as character strings [PROTOCOL CopyColumns 'O'], the two mixed in
+ * a copy in the rows' order; `finish` ends it, giving the rows inserted, or the copy's
  * failure, every row of it undone. Until it ends, the connection sends
  * nothing but its rows, its end and Ping [PROTOCOL CopyIn 'I']. A copy
  * let go of before it ends is abandoned.
@@ -34,6 +38,9 @@ final class Copying
 
     /** The bytes of the rows waiting. */
     private int $bytes = 0;
+
+    /** @var list<list<?string>> the rows waiting to be sent by column, as text, in place of `waiting` */
+    private array $cells = [];
 
     /** Whether it ended, finished or abandoned. */
     private bool $ended = false;
@@ -69,8 +76,19 @@ final class Copying
     public function send(array $row): void
     {
         $this->going();
-        $this->bytes += \strlen(ValueWriter::list(new Writer(), $row)->bytesWritten());
-        $this->waiting[] = $row;
+        if ($this->wire->told->has(Capability::COLUMNS) && self::text($row)) {
+            if ($this->waiting !== [] || \count($this->cells[0] ?? $row) !== \count($row)) {
+                $this->flush();
+            }
+            $this->bytes += array_sum(array_map(static fn(?string $cell): int => \strlen($cell ?? '') + 4, $row));
+            $this->cells[] = $row;
+        } else {
+            if ($this->cells !== []) {
+                $this->flush();
+            }
+            $this->bytes += \strlen(ValueWriter::list(new Writer(), $row)->bytesWritten());
+            $this->waiting[] = $row;
+        }
         if ($this->bytes >= self::CHUNK_BYTES) {
             $this->flush();
         }
@@ -125,17 +143,37 @@ final class Copying
     }
 
     /**
-     * Sends the rows waiting.
+     * Sends the rows waiting, by column or by row.
      *
      * @throws TurborelException SQLSTATE 08006 if the connection is lost
      */
     private function flush(): void
     {
-        if ($this->waiting === []) {
-            return;
+        [$rows, $cells, $this->waiting, $this->cells, $this->bytes] = [$this->waiting, $this->cells, [], [], 0];
+        if ($cells !== []) {
+            $this->wire->send(new CopyColumns($cells, \count($cells[0])));
         }
-        [$rows, $this->waiting, $this->bytes] = [$this->waiting, [], 0];
-        $this->wire->send(new CopyData($rows));
+        if ($rows !== []) {
+            $this->wire->send(new CopyData($rows));
+        }
+    }
+
+    /**
+     * Whether `$row` goes by column: a value for one column or more, each a string of UTF-8 or null.
+     *
+     * @param list<mixed> $row
+     *
+     * @phpstan-assert-if-true list<?string> $row
+     */
+    private static function text(array $row): bool
+    {
+        foreach ($row as $cell) {
+            if ($cell !== null && !(\is_string($cell) && preg_match('//u', $cell) === 1)) {
+                return false;
+            }
+        }
+
+        return $row !== [];
     }
 
     /**

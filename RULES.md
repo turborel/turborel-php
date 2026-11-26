@@ -525,7 +525,7 @@ outside them makes it risky. Tests run in their written order (R-TEST-5).
 The settings are in `phpunit.xml.dist`.
 
 Turborel's sample frames, `doc/client/05-protocol-frames.tsv`, are
-copied into `tests/Fixtures/` at a pinned commit of Turborel, 5863fe65,
+copied into `tests/Fixtures/` at a pinned commit of Turborel, 45cb0d7f,
 which their test names, rather than read from a Turborel checkout when
 one is there: a copy gives every run, and CI, the same frames. A new
 copy is taken with the pins of the headings (D6).

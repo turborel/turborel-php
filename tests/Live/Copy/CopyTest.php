@@ -144,6 +144,47 @@ final class CopyTest extends LiveTestCase
     }
 
     /**
+     * Verifies: [PROTOCOL CopyColumns 'O'] [CLIENT Copying and exporting]:
+     * granted `columns`, which connecting asks for, rows of strings and
+     * nulls are copied by column, a null and an empty string kept apart;
+     * CopyData and CopyColumns mix in one copy, in the rows' order; a cell
+     * too long fails the copy at its end (SQLSTATE 22001), its row in the
+     * detail, every row undone; an abandoned copy inserts none.
+     *
+     * @throws TurborelException never from the copies that succeed
+     */
+    #[Test]
+    public function rowsAreCopiedByColumn(): void
+    {
+        $connection = self::owner();
+        self::assertTrue($connection->has(Capability::COLUMNS));
+        $connection->query('CREATE TABLE C_COLS (K INTEGER, S VARCHAR(5))');
+        $copying = $connection->copyIn('C_COLS');
+        $copying->send(['1', null]);
+        $copying->send(['2', '']);
+        $copying->send([3, 'by']);
+        $copying->send(['4', 'ab']);
+        self::assertSame(4, $copying->finish());
+        $read = $connection->query('SELECT K, S FROM C_COLS ORDER BY K')->rows;
+        self::assertSame([['1', null], ['2', ''], ['3', 'by'], ['4', 'ab']], array_map(static fn(array $row): array => [($row[0] ?? null) instanceof Exact ? $row[0]->units : '', $row[1] ?? null], $read));
+        $connection->query('COMMIT');
+        $long = $connection->copyIn('C_COLS');
+        $long->send(['5', 'ok']);
+        $long->send(['6', 'abcdefgh']);
+        try {
+            $long->finish();
+            self::fail('a cell too long');
+        } catch (TurborelException $failure) {
+            self::assertSame(['22001', 'row 2 of the copy'], [$failure->getSqlState(), $failure->getDiagnostics()['detail'] ?? null]);
+        }
+        $abandoned = $connection->copyIn('C_COLS');
+        $abandoned->send(['7', 'x']);
+        $abandoned->abandon();
+        self::assertSame([['4']], array_map(static fn(array $row): array => [($row[0] ?? null) instanceof Exact ? $row[0]->units : ''], $connection->query('SELECT COUNT(*) FROM C_COLS')->rows));
+        $connection->terminate();
+    }
+
+    /**
      * An empty stream in memory.
      *
      * @return resource

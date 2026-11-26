@@ -61,7 +61,11 @@ final readonly class NativeRows
 
 `copyIn` begins a copy into a table, of the columns named or all, under
 autocommit its own transaction, granted `copy`. `send` sends a row,
-many to a message with no reply each; `finish` ends the copy and gives
+many to a message with no reply each: granted `columns`, which a
+connection asks for, a row whose every value is a string or null goes
+by column, each cell its text, as a character string would in a row,
+and any other row by row, the two mixed in one copy in the rows' order;
+`finish` ends the copy and gives
 the rows inserted; `abandon` undoes every row. A copy is all or
 nothing, a row refused undoing every row, its failure's detail naming
 it, as `row 2 of the copy`. Until it ends, the connection sends nothing
@@ -122,7 +126,7 @@ $connection->query('COMMIT');
 
 ## STANDARD
 
-[PROTOCOL CopyIn 'I'], [PROTOCOL CopyData 'J'], [PROTOCOL CopyEnd 'N'],
+[PROTOCOL CopyIn 'I'], [PROTOCOL CopyData 'J'], [PROTOCOL CopyColumns 'O'], [PROTOCOL CopyEnd 'N'],
 [PROTOCOL Conversations], [CLIENT Importing],
 [CLIENT Copying and exporting].
 

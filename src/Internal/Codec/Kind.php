@@ -67,6 +67,9 @@ final class Kind
     /** CopyEnd 'N' [PROTOCOL CopyEnd 'N']. */
     public const int COPY_END = 0x4E;
 
+    /** CopyColumns 'O', with `copy` and `columns` [PROTOCOL CopyColumns 'O']. */
+    public const int COPY_COLUMNS = 0x4F;
+
     /** Debug 'V', with `debugger` [PROTOCOL Debug 'V'] *(extension)*. */
     public const int DEBUG = 0x56;
 

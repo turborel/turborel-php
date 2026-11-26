@@ -17,6 +17,7 @@ use Turborel\Internal\Codec\Request\Answer;
 use Turborel\Internal\Codec\Request\Cancel;
 use Turborel\Internal\Codec\Request\ChangeUser;
 use Turborel\Internal\Codec\Request\Close;
+use Turborel\Internal\Codec\Request\CopyColumns;
 use Turborel\Internal\Codec\Request\CopyData;
 use Turborel\Internal\Codec\Request\CopyEnd;
 use Turborel\Internal\Codec\Request\CopyIn;
@@ -42,7 +43,7 @@ use Turborel\Value\LobKind;
 
 /**
  * Turborel's sample frames, `doc/client/05-protocol-frames.tsv`, copied
- * into the fixtures at Turborel's commit 5863fe65 (RULES.md D12): every
+ * into the fixtures at Turborel's commit 45cb0d7f (RULES.md D12): every
  * server frame decoded as its meaning says, every client frame encoded
  * byte for byte, and the compressed ones inflated.
  */
@@ -53,7 +54,7 @@ use Turborel\Value\LobKind;
 #[CoversClass(TurborelException::class)]
 final class SampleFramesTest extends CodecTestCase
 {
-    /** The copy of the file, at Turborel's commit 5863fe65. */
+    /** The copy of the file, at Turborel's commit 45cb0d7f. */
     private const string FILE = __DIR__ . '/../../../Fixtures/05-protocol-frames.tsv';
 
     /**
@@ -79,7 +80,7 @@ final class SampleFramesTest extends CodecTestCase
             $names[] = $name;
         }
         self::assertSame(array_unique($names), $names, 'each name once');
-        self::assertCount(166, $names);
+        self::assertCount(167, $names);
     }
 
     /**
@@ -185,6 +186,7 @@ final class SampleFramesTest extends CodecTestCase
             'copy-in' => new CopyIn('S.T', ['ID', 'NAME'], true),
             'copy-in-every-column' => new CopyIn('T'),
             'copy-data' => new CopyData([['1', null], ['2', 'b']]),
+            'copy-columns' => new CopyColumns([['1', 'b'], [null, '']], 2),
             'copy-end' => new CopyEnd(),
             'copy-end-abandon' => new CopyEnd(true),
         ];

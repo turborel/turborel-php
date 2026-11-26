@@ -21,6 +21,7 @@ use Turborel\Internal\Codec\Reply\Reply;
 use Turborel\Internal\Codec\Reply\Rows;
 use Turborel\Internal\Codec\Reply\Status;
 use Turborel\Internal\Codec\Reply\Suspended;
+use Turborel\Internal\Codec\Request\CopyColumns;
 use Turborel\Internal\Codec\Request\CopyData;
 use Turborel\Internal\Codec\Request\CopyEnd;
 use Turborel\Internal\Codec\Request\Ping;
@@ -82,7 +83,7 @@ final class Wire
      */
     public function send(Request $request): void
     {
-        if ($this->copying && !$request instanceof CopyData && !$request instanceof CopyEnd && !$request instanceof Ping) {
+        if ($this->copying && !$request instanceof CopyData && !$request instanceof CopyColumns && !$request instanceof CopyEnd && !$request instanceof Ping) {
             throw Misuse::of('a copy is under way: only its rows, its end and Ping are sent until it ends');
         }
         $this->sendBytes($request->encode());

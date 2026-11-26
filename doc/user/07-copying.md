@@ -12,8 +12,11 @@ Each example runs on `$connection`, a connection made as
 
 `copyIn` begins a copy of rows into a table, of the columns named, or
 all. Its `send` sends a row, many to a message and no reply each, and
-`finish` ends the copy, giving the rows inserted. Each value is assigned
-to its column as INSERT assigns it. A copy is all or nothing: a row
+`finish` ends the copy, giving the rows inserted. Where the server
+grants `columns`, rows of strings and nulls go by column, each cell its
+text, the faster way to load many rows; others go by row. Each value is
+assigned to its column as INSERT assigns it, so a string too long fails
+rather than being cut. A copy is all or nothing: a row
 refused undoes every row of it, its failure's detail naming the row,
 and within a transaction the copy alone is undone. A copy let go of
 before `finish` is abandoned. Until a copy ends, the connection sends

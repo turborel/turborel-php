@@ -26,7 +26,8 @@ client built to do all that Turborel's own client library,
 turborel-client, does: TCP, Unix sockets and Windows named pipes, TLS,
 SCRAM-SHA-256 and SCRAM-SHA-256-PLUS, prepared statements and cursors,
 procedures' OUT and INOUT parameters, columns' declared types, large
-objects, bulk copy, import and export, settings from a URI, the
+objects, bulk copy, by column where the server grants it, import and
+export, settings from a URI, the
 environment and service and password files, several servers, pipelines
 and pools, and the routine debugger *(extension)*.
 
